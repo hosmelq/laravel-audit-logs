@@ -1,0 +1,12 @@
+name: Autofix
+
+on: [pull_request]
+
+permissions:
+  contents: write
+
+jobs:
+  autofix:
+    uses: hosmelq/.github/.github/workflows/php-autofix.yml@3f9f936931ed05c535647b8988a006be574650cc
+    with:
+      php-version: '8.3'

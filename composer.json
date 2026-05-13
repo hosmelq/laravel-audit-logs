@@ -1,0 +1,95 @@
+{
+    "name": "hosmelq/laravel-audit-logs",
+    "description": "Batched audit logging for Laravel applications",
+    "license": "MIT",
+    "keywords": [
+        "hosmelq",
+        "audit",
+        "audit-log",
+        "audit-logs",
+        "laravel",
+        "laravel-audit-log",
+        "laravel-audit-logs",
+        "php"
+    ],
+    "authors": [
+        {
+            "name": "Hosmel Quintana",
+            "email": "hosmelq@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "illuminate/bus": "^12.0 || ^13.0",
+        "illuminate/console": "^12.0 || ^13.0",
+        "illuminate/database": "^12.0 || ^13.0",
+        "illuminate/queue": "^12.0 || ^13.0",
+        "illuminate/redis": "^12.0 || ^13.0",
+        "illuminate/support": "^12.0 || ^13.0",
+        "spatie/laravel-package-tools": "^1.93",
+        "thecodingmachine/safe": "^3.4"
+    },
+    "require-dev": {
+        "ergebnis/composer-normalize": "^2.50",
+        "larastan/larastan": "^3.9",
+        "laravel/pint": "^1.29",
+        "orchestra/pest-plugin-testbench": "^4.1",
+        "orchestra/testbench": "^10.0 || ^11.0",
+        "pestphp/pest": "^4.0",
+        "phpstan/extension-installer": "^1.4",
+        "phpstan/phpstan-deprecation-rules": "^2.0",
+        "phpstan/phpstan-strict-rules": "^2.0",
+        "rector/rector": "^2.3",
+        "rector/type-perfect": "^2.1",
+        "shipmonk/composer-dependency-analyser": "^1.8",
+        "spaze/phpstan-disallowed-calls": "^4.9",
+        "thecodingmachine/phpstan-safe-rule": "^1.4",
+        "ticketswap/phpstan-error-formatter": "^1.2",
+        "tomasvotruba/type-coverage": "^2.1"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "HosmelQ\\AuditLog\\": "src/"
+        },
+        "files": [
+            "src/functions.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "HosmelQ\\AuditLog\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "ergebnis/composer-normalize": true,
+            "pestphp/pest-plugin": true,
+            "phpstan/extension-installer": true
+        },
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "HosmelQ\\AuditLog\\AuditLogServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "phpstan": "phpstan analyse --configuration=phpstan.neon.dist --memory-limit=4G",
+        "pint": "pint",
+        "rector": "rector",
+        "test": "pest",
+        "test-coverage": "pest --coverage"
+    },
+    "scripts-descriptions": {
+        "phpstan": "Run PHPStan static analysis.",
+        "pint": "Format code using Laravel Pint.",
+        "rector": "Run Rector automated refactoring.",
+        "test": "Run the test suite using Pest.",
+        "test-coverage": "Run the test suite with code coverage using Pest."
+    },
+    "$schema": "https://getcomposer.org/schema.json"
+}
