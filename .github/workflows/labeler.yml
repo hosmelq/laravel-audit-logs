@@ -1,0 +1,7 @@
+name: Labeler
+
+on: [pull_request]
+
+jobs:
+  label:
+    uses: hosmelq/.github/.github/workflows/labeler.yml@3f9f936931ed05c535647b8988a006be574650cc
