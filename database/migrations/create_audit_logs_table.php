@@ -38,7 +38,7 @@ return new class () extends Migration {
             $table->string('remote_ip')->nullable();
             $table->string('source')->default('platform');
             $table->json('targets');
-            $table->string('tenant_id')->index();
+            $table->string('tenant_id');
             $table->text('user_agent')->nullable();
 
             $table->index(['tenant_id', 'bucket', 'occurred_at', 'id']);
