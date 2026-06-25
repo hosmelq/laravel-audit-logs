@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Added audit log identities for passing objects directly as actors and targets.
+
 ### Removed
 
 - Removed the redundant audit logs `tenant_id` index.

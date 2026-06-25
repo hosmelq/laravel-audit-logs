@@ -15,6 +15,7 @@ include actors, targets, request metadata, and custom metadata for each event.
 - [Recording Audit Logs](#recording-audit-logs)
   - [The Audit Log Helper](#the-audit-log-helper)
   - [Fluent Attributes](#fluent-attributes)
+  - [Audit Log Identities](#audit-log-identities)
   - [Recording Multiple Logs](#recording-multiple-logs)
   - [Correlating Logs](#correlating-logs)
   - [Defaults & Missing Values](#defaults--missing-values)
@@ -156,6 +157,40 @@ You may also record existing `AuditLogData` instances through the facade:
 use HosmelQ\AuditLog\Facades\AuditLog;
 
 AuditLog::record($log);
+```
+
+### Audit Log Identities
+
+Implement `HasAuditLogIdentity` when an object should be usable as an audit log actor or target:
+
+```php
+use HosmelQ\AuditLog\Contracts\HasAuditLogIdentity;
+use HosmelQ\AuditLog\Support\AuditLogIdentity;
+use Illuminate\Database\Eloquent\Model;
+
+class User extends Model implements HasAuditLogIdentity
+{
+    public function auditLogIdentity(): AuditLogIdentity
+    {
+        return new AuditLogIdentity(
+            id: $this->id,
+            name: $this->email,
+            type: $this->getMorphClass(),
+        );
+    }
+}
+```
+
+Pass the object directly to `actor` or `target`:
+
+```php
+use function HosmelQ\AuditLog\audit_log;
+
+audit_log('auth.sessions.delete')
+    ->actor($user)
+    ->target($organization)
+    ->tenant($organization->id)
+    ->record();
 ```
 
 ### Recording Multiple Logs

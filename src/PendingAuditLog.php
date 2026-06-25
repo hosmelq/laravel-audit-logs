@@ -7,9 +7,11 @@ namespace HosmelQ\AuditLog;
 use BackedEnum;
 use Carbon\CarbonInterface;
 use HosmelQ\AuditLog\Contracts\AuditLogManager;
+use HosmelQ\AuditLog\Contracts\HasAuditLogIdentity;
 use HosmelQ\AuditLog\Data\AuditLogActorData;
 use HosmelQ\AuditLog\Data\AuditLogData;
 use HosmelQ\AuditLog\Data\AuditLogTargetData;
+use HosmelQ\AuditLog\Exceptions\InvalidAuditLogIdentity;
 use HosmelQ\AuditLog\Support\Config;
 use HosmelQ\AuditLog\Support\Enum;
 use HosmelQ\AuditLog\Support\RequestMetadata;
@@ -58,8 +60,22 @@ final class PendingAuditLog
     /**
      * @param array<string, null|bool|float|int|string> $metadata
      */
-    public function actor(BackedEnum|string $type, int|string $id, null|string $name = null, array $metadata = []): self
-    {
+    public function actor(
+        BackedEnum|HasAuditLogIdentity|string $type,
+        null|int|string $id = null,
+        null|string $name = null,
+        array $metadata = [],
+    ): self {
+        if ($type instanceof HasAuditLogIdentity) {
+            $this->actor = $type->auditLogIdentity()->toActorData();
+
+            return $this;
+        }
+
+        if ($id === null) {
+            throw InvalidAuditLogIdentity::missingActorId();
+        }
+
         $this->actor = new AuditLogActorData(
             id: $id,
             metadata: $metadata,
@@ -138,11 +154,21 @@ final class PendingAuditLog
      * @param array<string, null|bool|float|int|string> $metadata
      */
     public function target(
-        BackedEnum|string $type,
-        int|string $id,
+        BackedEnum|HasAuditLogIdentity|string $type,
+        null|int|string $id = null,
         null|string $name = null,
         array $metadata = [],
     ): self {
+        if ($type instanceof HasAuditLogIdentity) {
+            $this->targets[] = $type->auditLogIdentity()->toTargetData();
+
+            return $this;
+        }
+
+        if ($id === null) {
+            throw InvalidAuditLogIdentity::missingTargetId();
+        }
+
         $this->targets[] = new AuditLogTargetData(
             id: $id,
             metadata: $metadata,

@@ -7,8 +7,12 @@ use function HosmelQ\AuditLog\audit_log;
 use Carbon\CarbonImmutable;
 use HosmelQ\AuditLog\Contracts\AuditLogManager;
 use HosmelQ\AuditLog\Data\AuditLogData;
+use HosmelQ\AuditLog\Exceptions\InvalidAuditLogIdentity;
 use HosmelQ\AuditLog\Facades\AuditLog;
+use HosmelQ\AuditLog\PendingAuditLog;
 use HosmelQ\AuditLog\Tests\TestSupport\TestEvent;
+use HosmelQ\AuditLog\Tests\TestSupport\TestOrganization;
+use HosmelQ\AuditLog\Tests\TestSupport\TestUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 
@@ -63,6 +67,37 @@ it('builds audit logs with fluent attributes', function (): void {
         ->targets()->{0}->id->toBe('account-1')
         ->tenantId->toBe('tenant-1')
         ->userAgent->toBe('Browser');
+});
+
+it('throws an audit log identity exception when a scalar actor is missing its id', function (): void {
+    expect(fn (): PendingAuditLog => audit_log('auth.sessions.delete')->actor('user'))
+        ->toThrow(InvalidAuditLogIdentity::class, 'An actor id is required');
+});
+
+it('throws an audit log identity exception when a scalar target is missing its id', function (): void {
+    expect(fn (): PendingAuditLog => audit_log('auth.sessions.delete')->target('user'))
+        ->toThrow(InvalidAuditLogIdentity::class, 'A target id is required');
+});
+
+it('builds actor and target from audit log identities', function (): void {
+    $log = audit_log('auth.sessions.delete')
+        ->actor(new TestUser())
+        ->target(new TestOrganization())
+        ->tenant('organization-1')
+        ->toAuditLogData();
+
+    expect($log)
+        ->actor->type->toBe('user')
+        ->actor->id->toBe('user-1')
+        ->actor->name->toBe('user@example.com')
+        ->actor->metadata->toBe(['role' => 'admin'])
+        ->targets()->{0}->toBe([
+            'id' => 'organization-1',
+            'metadata' => ['plan' => 'pro'],
+            'name' => 'Acme',
+            'type' => 'organization',
+        ])
+        ->tenantId->toBe('organization-1');
 });
 
 it('builds and records audit logs with configured defaults', function (): void {
