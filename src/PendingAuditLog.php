@@ -44,7 +44,7 @@ final class PendingAuditLog
      */
     private array $targets = [];
 
-    private string $tenantId = '';
+    private null|string $tenantId = null;
 
     private null|string $userAgent = null;
 
@@ -188,15 +188,11 @@ final class PendingAuditLog
 
     public function toAuditLogData(): AuditLogData
     {
+        $context = resolve(AuditLogContext::class);
         $requestMetadata = resolve(RequestMetadata::class);
 
         return new AuditLogData(
-            actor: $this->actor ?? new AuditLogActorData(
-                id: 'system',
-                metadata: [],
-                name: 'System',
-                type: 'system',
-            ),
+            actor: $this->actor ?? $context->actor(),
             bucket: $this->bucket ?? Config::defaultsBucket(),
             event: Enum::value($this->event),
             source: $this->source ?? Config::defaultsSource(),
@@ -207,7 +203,7 @@ final class PendingAuditLog
             metadata: $this->metadata,
             remoteIp: $this->remoteIp ?? $requestMetadata->remoteIp(),
             targets: $this->targets,
-            tenantId: $this->tenantId,
+            tenantId: $this->tenantId ?? $context->tenant(),
             userAgent: $this->userAgent ?? $requestMetadata->userAgent(),
         );
     }

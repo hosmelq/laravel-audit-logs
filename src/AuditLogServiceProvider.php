@@ -28,6 +28,7 @@ final class AuditLogServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $this->app->scoped(AuditLogContext::class);
         $this->app->scoped(AuditLogCorrelation::class);
         $this->app->scoped(AuditLogId::class);
         $this->app->scoped(AuditLogManager::class, DatabaseAuditLogManager::class);
