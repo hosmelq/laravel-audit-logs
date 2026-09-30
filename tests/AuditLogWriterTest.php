@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
 use HosmelQ\AuditLog\AuditLogWriter;
+use HosmelQ\AuditLog\Contracts\AuditLogManager;
 use HosmelQ\AuditLog\Data\AuditLogActorData;
 use HosmelQ\AuditLog\Data\AuditLogData;
 use HosmelQ\AuditLog\Data\AuditLogTargetData;
 use HosmelQ\AuditLog\Models\AuditLog;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
@@ -48,6 +50,29 @@ it('throws when payloads cannot be encoded as json', function (): void {
         ),
     ]))
         ->toThrow(JsonException::class);
+});
+
+it('does not recapture request metadata for correlated prepared logs that disable capture', function (): void {
+    Config::set('audit-log.request.capture_in_console', true);
+
+    app()->instance('request', Request::create('/', 'GET', server: [
+        'HTTP_USER_AGENT' => 'Browser',
+        'REMOTE_ADDR' => '203.0.113.10',
+    ]));
+
+    resolve(AuditLogManager::class)->correlate(function (): void {
+        resolve(AuditLogManager::class)->record(new AuditLogData(
+            actor: new AuditLogActorData(),
+            bucket: 'security',
+            event: 'account.updated',
+            source: 'tests',
+            captureRequestMetadata: false,
+            remoteIp: '127.0.0.1',
+            userAgent: 'Explicit agent',
+        ));
+    });
+
+    expect(AuditLog::query()->firstOrFail())->remote_ip->toBeNull()->user_agent->toBeNull();
 });
 
 it('writes audit logs to the configured table', function (): void {
@@ -164,4 +189,20 @@ it('sets expires_at from the retention configuration', function (): void {
     $expiresAt = DB::table('audit_logs')->value('expires_at');
 
     expect(CarbonImmutable::parse($expiresAt)->equalTo($occurredAt->addDays(30)))->toBeTrue();
+});
+
+it('stores redacted metadata', function (): void {
+    Config::set('audit-log.redaction.exclude', ['token']);
+
+    resolve(AuditLogWriter::class)->write([
+        new AuditLogData(
+            actor: new AuditLogActorData(),
+            bucket: 'security',
+            event: 'account.updated',
+            source: 'tests',
+            metadata: ['token' => 'secret', 'count' => 0],
+        ),
+    ]);
+
+    expect(AuditLog::query()->firstOrFail()->metadata)->toBe(['count' => 0]);
 });

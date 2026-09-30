@@ -22,6 +22,8 @@ final class PendingAuditLog
 
     private null|string $bucket = null;
 
+    private bool $captureRequestMetadata = true;
+
     private null|string $correlationId = null;
 
     private string $description = '';
@@ -196,21 +198,29 @@ final class PendingAuditLog
             bucket: $this->bucket ?? Config::defaultsBucket(),
             event: Enum::value($this->event),
             source: $this->source ?? Config::defaultsSource(),
+            captureRequestMetadata: $this->captureRequestMetadata,
             correlationId: $this->correlationId,
             description: $this->description,
             id: $this->id,
-            occurredAt: $this->occurredAt,
             metadata: $this->metadata,
-            remoteIp: $this->remoteIp ?? $requestMetadata->remoteIp(),
+            occurredAt: $this->occurredAt,
+            remoteIp: $this->captureRequestMetadata ? $this->remoteIp ?? $requestMetadata->remoteIp() : null,
             targets: $this->targets,
             tenantId: $this->tenantId ?? $context->tenant(),
-            userAgent: $this->userAgent ?? $requestMetadata->userAgent(),
+            userAgent: $this->captureRequestMetadata ? $this->userAgent ?? $requestMetadata->userAgent() : null,
         );
     }
 
     public function userAgent(string $userAgent): self
     {
         $this->userAgent = $userAgent;
+
+        return $this;
+    }
+
+    public function withoutRequestMetadata(): self
+    {
+        $this->captureRequestMetadata = false;
 
         return $this;
     }

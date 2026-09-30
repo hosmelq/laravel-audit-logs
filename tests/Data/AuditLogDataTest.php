@@ -102,8 +102,8 @@ it('serializes audit log data to arrays', function (): void {
         correlationId: 'correlation-1',
         description: 'Account updated.',
         id: 'log-1',
-        occurredAt: CarbonImmutable::parse('2026-05-25 10:00:00.123 UTC'),
         metadata: ['status' => 'active'],
+        occurredAt: CarbonImmutable::parse('2026-05-25 10:00:00.123 UTC'),
         remoteIp: '127.0.0.1',
         targets: [
             new AuditLogTargetData(

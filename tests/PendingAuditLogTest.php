@@ -27,6 +27,31 @@ it('throws an audit log identity exception when a scalar target is missing its i
         ->toThrow(InvalidAuditLogIdentity::class, 'A target id is required');
 });
 
+it('does not invoke context resolvers for explicit attributes', function (): void {
+    AuditLogContext::resolveActorUsing(fn () => throw new RuntimeException('Actor resolver called'));
+    AuditLogContext::resolveTenantUsing(fn () => throw new RuntimeException('Tenant resolver called'));
+
+    expect(audit_log('account.updated')->actor('user', 0)->tenant(0)->toAuditLogData())
+        ->actor->id->toBe('0')->tenantId->toBe('0');
+});
+
+it('omits request metadata when disabled for an event', function (): void {
+    Config::set('audit-log.request.capture_in_console', true);
+
+    app()->instance('request', Request::create('/', 'GET', server: [
+        'HTTP_USER_AGENT' => 'Browser',
+        'REMOTE_ADDR' => '203.0.113.10',
+    ]));
+
+    $log = audit_log('account.updated')
+        ->remoteIp('127.0.0.1')
+        ->userAgent('Explicit agent')
+        ->withoutRequestMetadata()
+        ->toAuditLogData();
+
+    expect($log)->remoteIp->toBeNull()->userAgent->toBeNull()->captureRequestMetadata->toBeFalse();
+});
+
 it('returns the audit log manager when called without an event', function (): void {
     expect(audit_log())->toBe(resolve(AuditLogManager::class));
 });
@@ -42,14 +67,6 @@ it('uses context for missing actors and tenants and preserves explicit values', 
         ->and($implicit->tenantId)->toBe('123')
         ->and($explicit->actor->id)->toBe('worker')
         ->and($explicit->tenantId)->toBe('');
-});
-
-it('does not invoke context resolvers for explicit attributes', function (): void {
-    AuditLogContext::resolveActorUsing(fn () => throw new RuntimeException('Actor resolver called'));
-    AuditLogContext::resolveTenantUsing(fn () => throw new RuntimeException('Tenant resolver called'));
-
-    expect(audit_log('account.updated')->actor('user', 0)->tenant(0)->toAuditLogData())
-        ->actor->id->toBe('0')->tenantId->toBe('0');
 });
 
 it('builds audit logs with request metadata', function (): void {

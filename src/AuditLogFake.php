@@ -9,6 +9,7 @@ use Closure;
 use HosmelQ\AuditLog\Contracts\AuditLogManager;
 use HosmelQ\AuditLog\Data\AuditLogData;
 use HosmelQ\AuditLog\Support\Enum;
+use HosmelQ\AuditLog\Support\RequestMetadata;
 use Illuminate\Support\Collection;
 use PHPUnit\Framework\Assert as PHPUnit;
 
@@ -19,8 +20,10 @@ final class AuditLogFake implements AuditLogManager
      */
     private array $recorded = [];
 
-    public function __construct(private readonly AuditLogCorrelation $correlation = new AuditLogCorrelation())
-    {
+    public function __construct(
+        private readonly AuditLogCorrelation $correlation = new AuditLogCorrelation(),
+        private readonly AuditLogRedactor $redactor = new AuditLogRedactor(),
+    ) {
     }
 
     public function assertNothingRecorded(): void
@@ -129,7 +132,7 @@ final class AuditLogFake implements AuditLogManager
                 ? $log->withCorrelationId($correlationId)
                 : $log;
 
-            $this->recorded[] = $log;
+            $this->recorded[] = $this->redactor->redact(resolve(RequestMetadata::class)->fill($log));
         }
     }
 
