@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HosmelQ\AuditLog;
 
 use HosmelQ\AuditLog\Data\AuditLogActorData;
+use HosmelQ\AuditLog\Data\AuditLogChangesData;
 use HosmelQ\AuditLog\Data\AuditLogData;
 use HosmelQ\AuditLog\Data\AuditLogTargetData;
 use HosmelQ\AuditLog\Support\Config;
@@ -52,6 +53,7 @@ final class AuditLogRedactor
             event: $log->event,
             source: $log->source,
             captureRequestMetadata: $log->captureRequestMetadata,
+            changes: $this->changes($log->changes),
             correlationId: $log->correlationId,
             description: $log->description,
             id: $log->id,
@@ -67,5 +69,19 @@ final class AuditLogRedactor
             tenantId: $log->tenantId,
             userAgent: $log->captureRequestMetadata ? $log->userAgent : null,
         );
+    }
+
+    private function changes(null|AuditLogChangesData $changes): null|AuditLogChangesData
+    {
+        if (! $changes instanceof AuditLogChangesData) {
+            return null;
+        }
+
+        $redacted = new AuditLogChangesData(
+            before: $this->metadata($changes->before),
+            after: $this->metadata($changes->after),
+        );
+
+        return $redacted->isEmpty() ? null : $redacted;
     }
 }

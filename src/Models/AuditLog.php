@@ -19,6 +19,7 @@ use Override;
  * @property-read null|string $actor_name
  * @property-read string $actor_type
  * @property-read string $bucket
+ * @property-read null|array{before: array<string, mixed>, after: array<string, mixed>} $attribute_changes
  * @property-read null|string $correlation_id
  * @property-read string $description
  * @property-read string $event
@@ -45,6 +46,7 @@ class AuditLog extends Model
      */
     protected $casts = [
         'actor_metadata' => 'array',
+        'attribute_changes' => 'array',
         'expires_at' => 'immutable_datetime',
         'inserted_at' => 'immutable_datetime',
         'metadata' => 'array',

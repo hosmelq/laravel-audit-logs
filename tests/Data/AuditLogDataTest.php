@@ -125,6 +125,7 @@ it('serializes audit log data to arrays', function (): void {
             'type' => 'user',
         ],
         'bucket' => 'security',
+        'changes' => null,
         'correlation_id' => 'correlation-1',
         'description' => 'Account updated.',
         'event' => 'account.updated',

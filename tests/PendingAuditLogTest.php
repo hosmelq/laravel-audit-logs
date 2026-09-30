@@ -118,6 +118,22 @@ it('builds audit logs with fluent attributes', function (): void {
         ->userAgent->toBe('Browser');
 });
 
+it('builds change data from attribute snapshots', function (): void {
+    $log = audit_log('account.updated')
+        ->changes(before: ['active' => false, 'count' => 1], after: ['active' => true, 'count' => 1])
+        ->toAuditLogData();
+
+    expect($log->changes?->toArray())->toBe(['before' => ['active' => false], 'after' => ['active' => true]]);
+});
+
+it('omits change data when no attribute changed', function (): void {
+    $log = audit_log('account.updated')
+        ->changes(before: ['active' => true], after: ['active' => true])
+        ->toAuditLogData();
+
+    expect($log->changes)->toBeNull();
+});
+
 it('builds actor and target from audit log identities', function (): void {
     $log = audit_log('auth.sessions.delete')
         ->actor(new TestUser())

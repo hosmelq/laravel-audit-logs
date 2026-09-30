@@ -23,7 +23,7 @@ final class AuditLogServiceProvider extends PackageServiceProvider
                     ->publishConfigFile()
                     ->publishMigrations();
             })
-            ->hasMigration('create_audit_logs_table');
+            ->hasMigrations(['create_audit_logs_table', 'update_audit_logs_table_with_attribute_changes']);
     }
 
     public function packageRegistered(): void

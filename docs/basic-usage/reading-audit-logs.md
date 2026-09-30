@@ -1,7 +1,7 @@
 ---
 title: "Querying Audit Logs"
 description: "Query stored events and work with their structured attributes."
-weight: 3
+weight: 4
 ---
 
 ## Query with Eloquent
@@ -25,6 +25,7 @@ The model uses the configured database connection and table.
 The following columns are cast automatically:
 
 - `actor_metadata`, `metadata`, and `targets` are arrays.
+- `changes` is an array containing `before` and `after`, or null when no changes were provided.
 - `occurred_at`, `inserted_at`, and `expires_at` are immutable dates.
 
 Common indexed filters include `tenant_id`, `bucket`, `event`, `actor_id`, `actor_type`, `correlation_id`, and the date columns. The composite index on `tenant_id`, `bucket`, `occurred_at`, and `id` supports tenant-scoped chronological queries.
