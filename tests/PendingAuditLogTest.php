@@ -5,6 +5,7 @@ declare(strict_types=1);
 use function HosmelQ\AuditLog\audit_log;
 
 use Carbon\CarbonImmutable;
+use HosmelQ\AuditLog\AuditLogContext;
 use HosmelQ\AuditLog\Contracts\AuditLogManager;
 use HosmelQ\AuditLog\Data\AuditLogData;
 use HosmelQ\AuditLog\Exceptions\InvalidAuditLogIdentity;
@@ -16,8 +17,39 @@ use HosmelQ\AuditLog\Tests\TestSupport\TestUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 
+it('throws an audit log identity exception when a scalar actor is missing its id', function (): void {
+    expect(fn (): PendingAuditLog => audit_log('auth.sessions.delete')->actor('user'))
+        ->toThrow(InvalidAuditLogIdentity::class, 'An actor id is required');
+});
+
+it('throws an audit log identity exception when a scalar target is missing its id', function (): void {
+    expect(fn (): PendingAuditLog => audit_log('auth.sessions.delete')->target('user'))
+        ->toThrow(InvalidAuditLogIdentity::class, 'A target id is required');
+});
+
 it('returns the audit log manager when called without an event', function (): void {
     expect(audit_log())->toBe(resolve(AuditLogManager::class));
+});
+
+it('uses context for missing actors and tenants and preserves explicit values', function (): void {
+    AuditLogContext::resolveActorUsing(fn (): TestUser => new TestUser());
+    AuditLogContext::resolveTenantUsing(fn (): int => 123);
+
+    $implicit = audit_log('account.updated')->toAuditLogData();
+    $explicit = audit_log('account.updated')->actor('service', 'worker')->tenant('')->toAuditLogData();
+
+    expect($implicit->actor->id)->toBe('user-1')
+        ->and($implicit->tenantId)->toBe('123')
+        ->and($explicit->actor->id)->toBe('worker')
+        ->and($explicit->tenantId)->toBe('');
+});
+
+it('does not invoke context resolvers for explicit attributes', function (): void {
+    AuditLogContext::resolveActorUsing(fn () => throw new RuntimeException('Actor resolver called'));
+    AuditLogContext::resolveTenantUsing(fn () => throw new RuntimeException('Tenant resolver called'));
+
+    expect(audit_log('account.updated')->actor('user', 0)->tenant(0)->toAuditLogData())
+        ->actor->id->toBe('0')->tenantId->toBe('0');
 });
 
 it('builds audit logs with request metadata', function (): void {
@@ -67,16 +99,6 @@ it('builds audit logs with fluent attributes', function (): void {
         ->targets()->{0}->id->toBe('account-1')
         ->tenantId->toBe('tenant-1')
         ->userAgent->toBe('Browser');
-});
-
-it('throws an audit log identity exception when a scalar actor is missing its id', function (): void {
-    expect(fn (): PendingAuditLog => audit_log('auth.sessions.delete')->actor('user'))
-        ->toThrow(InvalidAuditLogIdentity::class, 'An actor id is required');
-});
-
-it('throws an audit log identity exception when a scalar target is missing its id', function (): void {
-    expect(fn (): PendingAuditLog => audit_log('auth.sessions.delete')->target('user'))
-        ->toThrow(InvalidAuditLogIdentity::class, 'A target id is required');
 });
 
 it('builds actor and target from audit log identities', function (): void {

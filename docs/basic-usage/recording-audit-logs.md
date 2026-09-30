@@ -66,7 +66,8 @@ The manager accepts one `AuditLogData` instance or an iterable. See [batching an
 
 Missing values follow these rules:
 
-- If no actor is set, a system actor is used.
+- If no actor is set, the configured context resolver is used, falling back to a system actor.
+- If no tenant is set, the configured context resolver is used, falling back to an empty string.
 - If no bucket or source is set, the configured default is used.
 - If no ID is set, one is generated.
 - If no occurrence time is set, the current time is used.
