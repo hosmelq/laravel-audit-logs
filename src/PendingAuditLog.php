@@ -11,6 +11,7 @@ use HosmelQ\AuditLog\Contracts\HasAuditLogIdentity;
 use HosmelQ\AuditLog\Data\AuditLogActorData;
 use HosmelQ\AuditLog\Data\AuditLogChangesData;
 use HosmelQ\AuditLog\Data\AuditLogData;
+use HosmelQ\AuditLog\Data\AuditLogRetentionData;
 use HosmelQ\AuditLog\Data\AuditLogTargetData;
 use HosmelQ\AuditLog\Exceptions\InvalidAuditLogIdentity;
 use HosmelQ\AuditLog\Support\Config;
@@ -41,6 +42,8 @@ final class PendingAuditLog
     private null|CarbonInterface $occurredAt = null;
 
     private null|string $remoteIp = null;
+
+    private null|AuditLogRetentionData $retention = null;
 
     private null|string $source = null;
 
@@ -159,6 +162,13 @@ final class PendingAuditLog
         return $this;
     }
 
+    public function retentionDays(null|int $days): self
+    {
+        $this->retention = new AuditLogRetentionData($days);
+
+        return $this;
+    }
+
     public function source(BackedEnum|string $source): self
     {
         $this->source = Enum::value($source);
@@ -220,6 +230,7 @@ final class PendingAuditLog
             metadata: $this->metadata,
             occurredAt: $this->occurredAt,
             remoteIp: $this->captureRequestMetadata ? $this->remoteIp ?? $requestMetadata->remoteIp() : null,
+            retention: $this->retention,
             targets: $this->targets,
             tenantId: $this->tenantId ?? $context->tenant(),
             userAgent: $this->captureRequestMetadata ? $this->userAgent ?? $requestMetadata->userAgent() : null,

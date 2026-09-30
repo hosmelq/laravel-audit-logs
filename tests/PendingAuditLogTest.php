@@ -22,6 +22,11 @@ it('throws an audit log identity exception when a scalar actor is missing its id
         ->toThrow(InvalidAuditLogIdentity::class, 'An actor id is required');
 });
 
+it('rejects negative retention periods on the fluent builder', function (): void {
+    expect(fn (): PendingAuditLog => audit_log('account.updated')->retentionDays(-1))
+        ->toThrow(InvalidArgumentException::class);
+});
+
 it('throws an audit log identity exception when a scalar target is missing its id', function (): void {
     expect(fn (): PendingAuditLog => audit_log('auth.sessions.delete')->target('user'))
         ->toThrow(InvalidAuditLogIdentity::class, 'A target id is required');
@@ -125,6 +130,12 @@ it('builds change data from attribute snapshots', function (): void {
 
     expect($log->changes?->toArray())->toBe(['before' => ['active' => false], 'after' => ['active' => true]]);
 });
+
+it('preserves explicit retention periods on prepared logs', function (null|int $days): void {
+    $log = audit_log('account.updated')->retentionDays($days)->toAuditLogData();
+
+    expect($log->retention)->not->toBeNull()->days->toBe($days);
+})->with(['indefinite' => [null], 'immediate' => [0], 'period' => [90]]);
 
 it('builds actor and target from audit log identities', function (): void {
     $log = audit_log('auth.sessions.delete')

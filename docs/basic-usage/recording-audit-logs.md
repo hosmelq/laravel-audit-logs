@@ -35,6 +35,8 @@ audit_log('document.published')
 
 Optional fields include `description`, `bucket`, `source`, `occurredAt`, `remoteIp`, `userAgent`, `id`, and `correlationId`. Tenant, actor, and target IDs may be integers or strings.
 
+Call `retentionDays()` to set a retention period for an individual log. See [configuring retention](../advanced-usage/configuring-retention).
+
 Call `target()` more than once when an event affects multiple resources. Actor and target types, buckets, and sources also accept backed enums.
 
 ## Recording prepared logs

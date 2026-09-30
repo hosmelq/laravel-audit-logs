@@ -55,13 +55,28 @@ final class Config
         return ConfigFacade::boolean('audit-log.request.capture_user_agent', true);
     }
 
-    public static function retentionDays(): null|int
+    public static function retentionDays(null|string $event = null, null|string $bucket = null): null|int
     {
-        /** @var null|int $days */
-        $days = ConfigFacade::get('audit-log.retention.days');
+        $events = ConfigFacade::array('audit-log.retention.events', []);
+        $buckets = ConfigFacade::array('audit-log.retention.buckets', []);
+        $key = 'audit-log.retention.days';
+
+        if ($event !== null && array_key_exists($event, $events)) {
+            $days = $events[$event];
+            $key = 'audit-log.retention.events.'.$event;
+        } elseif ($bucket !== null && array_key_exists($bucket, $buckets)) {
+            $days = $buckets[$bucket];
+            $key = 'audit-log.retention.buckets.'.$bucket;
+        } else {
+            $days = ConfigFacade::get($key);
+        }
+
+        if ($days !== null && ! is_int($days)) {
+            throw new InvalidArgumentException(sprintf('Invalid %s value. Expected a non-negative integer or null.', $key));
+        }
 
         if ($days !== null && $days < 0) {
-            throw new InvalidArgumentException(sprintf('Invalid audit-log.retention.days value [%d].', $days));
+            throw new InvalidArgumentException(sprintf('Invalid %s value [%d].', $key, $days));
         }
 
         return $days;

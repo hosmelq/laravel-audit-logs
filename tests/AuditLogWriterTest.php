@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use function HosmelQ\AuditLog\audit_log;
+
 use Carbon\CarbonImmutable;
 use HosmelQ\AuditLog\AuditLogWriter;
 use HosmelQ\AuditLog\Contracts\AuditLogManager;
@@ -264,4 +266,36 @@ it('preserves integer to float changes including nested values after database st
         ->and($stored->changes['after']['value'])->toBe(1.0)
         ->and($stored->changes['before']['settings']['value'])->toBe(1)
         ->and($stored->changes['after']['settings']['value'])->toBe(1.0);
+});
+
+it('uses individual event bucket and default retention periods within one correlated batch', function (): void {
+    Config::set('audit-log.retention.days', 7);
+    Config::set('audit-log.retention.events', ['account.updated' => 2, 'account.kept' => null]);
+    Config::set('audit-log.retention.buckets', ['security' => 30]);
+
+    $occurredAt = CarbonImmutable::parse('2026-05-01 10:00:00.123 UTC');
+    $logs = [
+        audit_log('account.closed')->id('default')->bucket('application')->occurredAt($occurredAt)->toAuditLogData(),
+        audit_log('account.closed')->id('bucket')->bucket('security')->occurredAt($occurredAt)->toAuditLogData(),
+        audit_log('account.updated')->id('event')->bucket('security')->occurredAt($occurredAt)->toAuditLogData(),
+        audit_log('account.updated')->id('explicit')->bucket('security')->occurredAt($occurredAt)->retentionDays(90)->toAuditLogData(),
+        audit_log('account.updated')->id('immediate')->bucket('security')->occurredAt($occurredAt)->retentionDays(0)->toAuditLogData(),
+        audit_log('account.updated')->id('indefinite')->bucket('security')->occurredAt($occurredAt)->retentionDays(null)->toAuditLogData(),
+        audit_log('account.kept')->id('event-indefinite')->bucket('security')->occurredAt($occurredAt)->toAuditLogData(),
+    ];
+
+    audit_log()->correlate(function () use ($logs): void {
+        audit_log()->record($logs);
+    }, 'retention-correlation');
+
+    $stored = AuditLog::query()->get()->keyBy('id');
+
+    expect($stored['default']->expires_at->equalTo($occurredAt->addDays(7)))->toBeTrue()
+        ->and($stored['bucket']->expires_at->equalTo($occurredAt->addDays(30)))->toBeTrue()
+        ->and($stored['event']->expires_at->equalTo($occurredAt->addDays(2)))->toBeTrue()
+        ->and($stored['explicit']->expires_at->equalTo($occurredAt->addDays(90)))->toBeTrue()
+        ->and($stored['immediate']->expires_at->equalTo($occurredAt))->toBeTrue()
+        ->and($stored['indefinite']->expires_at)->toBeNull()
+        ->and($stored['event-indefinite']->expires_at)->toBeNull()
+        ->and($stored->pluck('correlation_id')->unique()->all())->toBe(['retention-correlation']);
 });

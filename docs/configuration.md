@@ -36,6 +36,8 @@ Batch inserts are split by `audit-log.storage.insert_chunk_size`. All chunks fro
 
 Set `audit-log.retention.days` to a non-negative number of days or `null`. A `null` value keeps new audit logs indefinitely.
 
+`audit-log.retention.events` and `audit-log.retention.buckets` provide periods for exact event names and buckets. Explicit `retentionDays()` values take precedence over event rules, followed by bucket rules and the global default. See [configuring retention](advanced-usage/configuring-retention).
+
 When a log is written, its `expires_at` value is calculated from `occurred_at` using the current retention setting. Changing the setting does not update rows that already exist.
 
 The package model uses Laravel's `MassPrunable` trait. Schedule `model:prune` to delete rows whose `expires_at` value has passed:

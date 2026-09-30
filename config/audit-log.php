@@ -59,14 +59,17 @@ return [
     | Audit Log Retention
     |--------------------------------------------------------------------------
     |
-    | This option controls how long audit logs should be retained. Setting the
-    | value to null will keep audit logs indefinitely. When a value is set,
-    | each inserted row receives an expiration date for model pruning.
+    | These options control how long audit logs should be retained. Event
+    | rules take precedence over bucket rules and the default days. A null
+    | value keeps matching logs indefinitely. Individual logs may override
+    | these rules when they are recorded.
     |
     */
 
     'retention' => [
         'days' => env('AUDIT_LOG_RETENTION_DAYS') === null ? null : (int) env('AUDIT_LOG_RETENTION_DAYS'),
+        'events' => [],
+        'buckets' => [],
     ],
 
     /*

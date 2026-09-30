@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use function HosmelQ\AuditLog\audit_log;
+
 use HosmelQ\AuditLog\AuditLogId;
 use HosmelQ\AuditLog\Data\AuditLogActorData;
 use HosmelQ\AuditLog\Data\AuditLogChangesData;
 use HosmelQ\AuditLog\Data\AuditLogData;
+use HosmelQ\AuditLog\Data\AuditLogRetentionData;
 use HosmelQ\AuditLog\Facades\AuditLog;
 use HosmelQ\AuditLog\Tests\TestSupport\TestEvent;
 use Illuminate\Support\Facades\Config;
@@ -96,6 +99,17 @@ it('records redacted changes through correlated scopes', function (): void {
 
     AuditLog::assertRecorded(fn (AuditLogData $log): bool => $log->correlationId === 'correlation-1'
         && $log->changes?->toArray() === ['before' => ['active' => false], 'after' => ['active' => true]]);
+});
+
+it('preserves explicit indefinite retention through fake correlation scopes', function (): void {
+    AuditLog::fake();
+
+    AuditLog::correlate(function (): void {
+        audit_log('account.updated')->retentionDays(null)->record();
+    }, 'correlation-1');
+
+    AuditLog::assertRecorded(fn (AuditLogData $log): bool => $log->correlationId === 'correlation-1'
+        && $log->retention instanceof AuditLogRetentionData && $log->retention->days === null);
 });
 
 it('records audit logs and supports assertions', function (): void {

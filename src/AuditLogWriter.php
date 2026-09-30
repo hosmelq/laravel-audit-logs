@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use HosmelQ\AuditLog\Data\AuditLogChangesData;
 use HosmelQ\AuditLog\Data\AuditLogData;
+use HosmelQ\AuditLog\Data\AuditLogRetentionData;
 use HosmelQ\AuditLog\Models\AuditLog as AuditLogModel;
 use HosmelQ\AuditLog\Support\Config;
 use HosmelQ\AuditLog\Support\RequestMetadata;
@@ -52,11 +53,13 @@ final readonly class AuditLogWriter
     {
         $auditLogs = [];
         $insertedAt = new CarbonImmutable();
-        $retentionDays = Config::retentionDays();
 
         foreach ($logs as $log) {
             $log = $this->redactor->redact($log);
             $occurredAt = $log->occurredAt;
+            $retentionDays = $log->retention instanceof AuditLogRetentionData
+                ? $log->retention->days
+                : Config::retentionDays(event: $log->event, bucket: $log->bucket);
             $expiresAt = $retentionDays === null ? null : $occurredAt->addDays($retentionDays);
             $targets = $log->targets();
 
