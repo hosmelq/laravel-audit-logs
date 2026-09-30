@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use HosmelQ\AuditLog\AuditLogId;
 use HosmelQ\AuditLog\Data\AuditLogActorData;
+use HosmelQ\AuditLog\Data\AuditLogChangesData;
 use HosmelQ\AuditLog\Data\AuditLogData;
 use HosmelQ\AuditLog\Facades\AuditLog;
 use HosmelQ\AuditLog\Tests\TestSupport\TestEvent;
@@ -76,6 +77,25 @@ it('records redacted metadata without changing prepared data', function (): void
         && $recorded->remoteIp === null && $recorded->userAgent === null);
 
     expect($log->metadata)->toBe(['email' => 'user@example.com']);
+});
+
+it('records redacted changes through correlated scopes', function (): void {
+    AuditLog::fake();
+
+    Config::set('audit-log.redaction.exclude', ['token']);
+
+    AuditLog::correlate(function (): void {
+        AuditLog::record(new AuditLogData(
+            actor: new AuditLogActorData(),
+            bucket: 'security',
+            event: 'account.updated',
+            source: 'tests',
+            changes: AuditLogChangesData::between(before: ['token' => 'old', 'active' => false], after: ['token' => 'new', 'active' => true]),
+        ));
+    }, 'correlation-1');
+
+    AuditLog::assertRecorded(fn (AuditLogData $log): bool => $log->correlationId === 'correlation-1'
+        && $log->changes?->toArray() === ['before' => ['active' => false], 'after' => ['active' => true]]);
 });
 
 it('records audit logs and supports assertions', function (): void {

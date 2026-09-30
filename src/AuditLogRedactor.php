@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HosmelQ\AuditLog;
 
 use HosmelQ\AuditLog\Data\AuditLogActorData;
+use HosmelQ\AuditLog\Data\AuditLogChangesData;
 use HosmelQ\AuditLog\Data\AuditLogData;
 use HosmelQ\AuditLog\Data\AuditLogTargetData;
 use HosmelQ\AuditLog\Support\Config;
@@ -12,9 +13,11 @@ use HosmelQ\AuditLog\Support\Config;
 final class AuditLogRedactor
 {
     /**
-     * @param array<string, null|bool|float|int|string> $metadata
+     * @template TValue
      *
-     * @return array<string, null|bool|float|int|string>
+     * @param array<string, TValue> $metadata
+     *
+     * @return array<string, string|TValue>
      */
     public function metadata(array $metadata): array
     {
@@ -49,6 +52,10 @@ final class AuditLogRedactor
             event: $log->event,
             source: $log->source,
             captureRequestMetadata: $log->captureRequestMetadata,
+            changes: $log->changes instanceof AuditLogChangesData ? new AuditLogChangesData(
+                before: $this->metadata($log->changes->before),
+                after: $this->metadata($log->changes->after),
+            ) : null,
             correlationId: $log->correlationId,
             description: $log->description,
             id: $log->id,

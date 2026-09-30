@@ -1,7 +1,7 @@
 ---
 title: "Testing Audit Logs"
 description: "Fake the manager and assert application audit behavior."
-weight: 4
+weight: 5
 ---
 
 ## Fake the audit manager

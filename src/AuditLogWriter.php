@@ -6,6 +6,7 @@ namespace HosmelQ\AuditLog;
 
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use HosmelQ\AuditLog\Data\AuditLogChangesData;
 use HosmelQ\AuditLog\Data\AuditLogData;
 use HosmelQ\AuditLog\Models\AuditLog as AuditLogModel;
 use HosmelQ\AuditLog\Support\Config;
@@ -69,6 +70,10 @@ final readonly class AuditLogWriter
                 'actor_name' => $log->actor->name,
                 'actor_type' => $log->actor->type,
                 'bucket' => $log->bucket,
+                'changes' => $log->changes instanceof AuditLogChangesData ? json_encode([
+                    'before' => (object) $log->changes->before,
+                    'after' => (object) $log->changes->after,
+                ], JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION) : null,
                 'correlation_id' => $log->correlationId,
                 'description' => $log->description,
                 'event' => $log->event,

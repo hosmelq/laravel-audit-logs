@@ -1,6 +1,6 @@
 ---
 title: "Installation"
-description: "Install Laravel Audit Logs and publish its configuration and migration."
+description: "Install Laravel Audit Logs and publish its configuration and migrations."
 weight: 2
 ---
 
@@ -16,7 +16,7 @@ Install the package with Composer:
 composer require hosmelq/laravel-audit-logs
 ```
 
-Run the installer to publish the configuration and migration:
+Run the installer to publish the configuration and migrations:
 
 ```bash
 php artisan audit-log:install
@@ -38,3 +38,14 @@ php artisan vendor:publish --tag="audit-log-migrations"
 ```
 
 Continue with [configuration](configuration), then [record your first audit log](basic-usage/recording-audit-logs).
+
+## Update existing installations
+
+After updating the package, publish any new migrations and run them:
+
+```bash
+php artisan vendor:publish --tag="audit-log-migrations"
+php artisan migrate
+```
+
+The attribute changes migration adds a nullable `changes` column to the configured audit log table. Existing logs are preserved and have a null value. Run this migration before recording logs with the updated package.

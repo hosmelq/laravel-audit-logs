@@ -9,6 +9,7 @@ use Carbon\CarbonInterface;
 use HosmelQ\AuditLog\Contracts\AuditLogManager;
 use HosmelQ\AuditLog\Contracts\HasAuditLogIdentity;
 use HosmelQ\AuditLog\Data\AuditLogActorData;
+use HosmelQ\AuditLog\Data\AuditLogChangesData;
 use HosmelQ\AuditLog\Data\AuditLogData;
 use HosmelQ\AuditLog\Data\AuditLogTargetData;
 use HosmelQ\AuditLog\Exceptions\InvalidAuditLogIdentity;
@@ -23,6 +24,8 @@ final class PendingAuditLog
     private null|string $bucket = null;
 
     private bool $captureRequestMetadata = true;
+
+    private null|AuditLogChangesData $changes = null;
 
     private null|string $correlationId = null;
 
@@ -91,6 +94,17 @@ final class PendingAuditLog
     public function bucket(BackedEnum|string $bucket): self
     {
         $this->bucket = Enum::value($bucket);
+
+        return $this;
+    }
+
+    /**
+     * @param array<string, null|array<array-key, mixed>|bool|float|int|string> $before
+     * @param array<string, null|array<array-key, mixed>|bool|float|int|string> $after
+     */
+    public function changes(array $before, array $after): self
+    {
+        $this->changes = AuditLogChangesData::between($before, $after);
 
         return $this;
     }
@@ -199,6 +213,7 @@ final class PendingAuditLog
             event: Enum::value($this->event),
             source: $this->source ?? Config::defaultsSource(),
             captureRequestMetadata: $this->captureRequestMetadata,
+            changes: $this->changes,
             correlationId: $this->correlationId,
             description: $this->description,
             id: $this->id,

@@ -6,6 +6,7 @@ use Carbon\CarbonImmutable;
 use HosmelQ\AuditLog\AuditLogWriter;
 use HosmelQ\AuditLog\Contracts\AuditLogManager;
 use HosmelQ\AuditLog\Data\AuditLogActorData;
+use HosmelQ\AuditLog\Data\AuditLogChangesData;
 use HosmelQ\AuditLog\Data\AuditLogData;
 use HosmelQ\AuditLog\Data\AuditLogTargetData;
 use HosmelQ\AuditLog\Models\AuditLog;
@@ -50,6 +51,21 @@ it('throws when payloads cannot be encoded as json', function (): void {
         ),
     ]))
         ->toThrow(JsonException::class);
+});
+
+it('rolls back earlier chunks when changes cannot be encoded as json', function (): void {
+    Config::set('audit-log.storage.insert_chunk_size', 1);
+
+    expect(fn () => resolve(AuditLogWriter::class)->write([
+        new AuditLogData(actor: new AuditLogActorData(), bucket: 'security', event: 'first.event', source: 'tests'),
+        new AuditLogData(
+            actor: new AuditLogActorData(),
+            bucket: 'security',
+            event: 'account.updated',
+            source: 'tests',
+            changes: AuditLogChangesData::between(before: ['score' => 0], after: ['score' => NAN]),
+        ),
+    ]))->toThrow(JsonException::class)->and(AuditLog::query()->count())->toBe(0);
 });
 
 it('does not recapture request metadata for correlated prepared logs that disable capture', function (): void {
@@ -205,4 +221,47 @@ it('stores redacted metadata', function (): void {
     ]);
 
     expect(AuditLog::query()->firstOrFail()->metadata)->toBe(['count' => 0]);
+});
+
+it('stores change snapshots as objects and preserves them through correlation', function (): void {
+    $changes = AuditLogChangesData::between(before: [], after: ['active' => false]);
+
+    resolve(AuditLogManager::class)->correlate(function () use ($changes): void {
+        resolve(AuditLogManager::class)->record(new AuditLogData(
+            actor: new AuditLogActorData(),
+            bucket: 'security',
+            event: 'account.updated',
+            source: 'tests',
+            changes: $changes,
+        ));
+    });
+
+    $stored = AuditLog::query()->firstOrFail();
+
+    expect($stored->changes['before'])->toBe([])
+        ->and($stored->changes['after'])->toBe(['active' => false])
+        ->and(DB::table('audit_logs')->selectRaw("JSON_TYPE(JSON_EXTRACT(changes, '$.before')) as before_type")->value('before_type'))
+        ->toBe('OBJECT');
+});
+
+it('preserves integer to float changes including nested values after database storage', function (): void {
+    resolve(AuditLogWriter::class)->write([
+        new AuditLogData(
+            actor: new AuditLogActorData(),
+            bucket: 'security',
+            event: 'account.updated',
+            source: 'tests',
+            changes: AuditLogChangesData::between(
+                before: ['value' => 1, 'settings' => ['value' => 1]],
+                after: ['value' => 1.0, 'settings' => ['value' => 1.0]],
+            ),
+        ),
+    ]);
+
+    $stored = AuditLog::query()->firstOrFail();
+
+    expect($stored->changes['before']['value'])->toBe(1)
+        ->and($stored->changes['after']['value'])->toBe(1.0)
+        ->and($stored->changes['before']['settings']['value'])->toBe(1)
+        ->and($stored->changes['after']['settings']['value'])->toBe(1.0);
 });

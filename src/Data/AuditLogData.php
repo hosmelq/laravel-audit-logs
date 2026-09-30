@@ -34,6 +34,7 @@ final readonly class AuditLogData
         public string $event,
         public string $source,
         public bool $captureRequestMetadata = true,
+        public null|AuditLogChangesData $changes = null,
         null|string $correlationId = null,
         public string $description = '',
         null|string $id = null,
@@ -70,6 +71,7 @@ final readonly class AuditLogData
      * @return array{
      *     actor: array{id: string, metadata: array<string, null|bool|float|int|string>, name: null|string, type: string},
      *     bucket: string,
+     *     changes: null|array{before: array<string, null|array<array-key, mixed>|bool|float|int|string>, after: array<string, null|array<array-key, mixed>|bool|float|int|string>},
      *     correlation_id: null|string,
      *     description: string,
      *     event: string,
@@ -88,6 +90,7 @@ final readonly class AuditLogData
         return [
             'actor' => $this->actor->toArray(),
             'bucket' => $this->bucket,
+            'changes' => $this->changes?->toArray(),
             'correlation_id' => $this->correlationId,
             'description' => $this->description,
             'event' => $this->event,
@@ -110,6 +113,7 @@ final readonly class AuditLogData
             event: $this->event,
             source: $this->source,
             captureRequestMetadata: $this->captureRequestMetadata,
+            changes: $this->changes,
             correlationId: $correlationId,
             description: $this->description,
             id: $this->id,

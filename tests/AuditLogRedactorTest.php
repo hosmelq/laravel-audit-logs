@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use HosmelQ\AuditLog\AuditLogRedactor;
 use HosmelQ\AuditLog\Data\AuditLogActorData;
+use HosmelQ\AuditLog\Data\AuditLogChangesData;
 use HosmelQ\AuditLog\Data\AuditLogData;
 use HosmelQ\AuditLog\Data\AuditLogTargetData;
 use Illuminate\Support\Facades\Config;
@@ -46,6 +47,28 @@ it('excludes and masks keys across event actor and target metadata', function ()
         ->and($log->metadata)->toBe($metadata)
         ->and($log->actor->metadata)->toBe($metadata)
         ->and($log->targets[0]->metadata)->toBe($metadata);
+});
+
+it('redacts changes while preserving masked change records and absent attributes', function (): void {
+    Config::set('audit-log.redaction.exclude', ['password']);
+    Config::set('audit-log.redaction.mask', ['email', 'added']);
+
+    $changes = AuditLogChangesData::between(
+        before: ['password' => 'old', 'email' => 'old@example.com', 'removed' => null],
+        after: ['password' => 'new', 'email' => 'new@example.com', 'added' => false],
+    );
+    $log = new AuditLogData(
+        actor: new AuditLogActorData(),
+        bucket: 'security',
+        event: 'account.updated',
+        source: 'tests',
+        changes: $changes,
+    );
+
+    expect(resolve(AuditLogRedactor::class)->redact($log)->changes?->toArray())->toBe([
+        'before' => ['email' => '[REDACTED]', 'removed' => null],
+        'after' => ['email' => '[REDACTED]', 'added' => '[REDACTED]'],
+    ])->and($changes->before['password'])->toBe('old');
 });
 
 it('matches metadata keys exactly and does not add missing masked keys', function (): void {
