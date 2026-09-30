@@ -39,6 +39,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Sensitive Metadata
+    |--------------------------------------------------------------------------
+    |
+    | These keys are excluded or masked in event, actor, and target metadata.
+    | Exclusion takes precedence when a key appears in both lists. Empty
+    | lists preserve metadata as provided by your application.
+    |
+    */
+
+    'redaction' => [
+        'exclude' => [],
+        'mask' => [],
+        'replacement' => '[REDACTED]',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Audit Log Retention
     |--------------------------------------------------------------------------
     |

@@ -22,7 +22,7 @@ audit_log('document.published')
 AuditLog::assertRecorded('document.published');
 ```
 
-The fake preserves the manager's batching and correlation behavior without writing to the database.
+The fake preserves the manager's batching, correlation, and metadata redaction behavior without writing to the database.
 
 ## Assert recorded events
 

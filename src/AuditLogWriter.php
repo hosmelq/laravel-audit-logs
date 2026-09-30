@@ -14,8 +14,10 @@ use Illuminate\Database\Connection;
 
 final readonly class AuditLogWriter
 {
-    public function __construct(private RequestMetadata $requestMetadata)
-    {
+    public function __construct(
+        private RequestMetadata $requestMetadata,
+        private AuditLogRedactor $redactor,
+    ) {
     }
 
     /**
@@ -52,6 +54,7 @@ final readonly class AuditLogWriter
         $retentionDays = Config::retentionDays();
 
         foreach ($logs as $log) {
+            $log = $this->redactor->redact($log);
             $occurredAt = $log->occurredAt;
             $expiresAt = $retentionDays === null ? null : $occurredAt->addDays($retentionDays);
             $targets = $log->targets();
@@ -74,11 +77,11 @@ final readonly class AuditLogWriter
                 'inserted_at' => $this->date($insertedAt),
                 'metadata' => json_encode((object) $log->metadata, JSON_THROW_ON_ERROR),
                 'occurred_at' => $this->date($occurredAt),
-                'remote_ip' => $log->remoteIp ?? $this->requestMetadata->remoteIp(),
+                'remote_ip' => $log->captureRequestMetadata ? $log->remoteIp ?? $this->requestMetadata->remoteIp() : null,
                 'source' => $log->source,
                 'targets' => json_encode($targets, JSON_THROW_ON_ERROR),
                 'tenant_id' => $log->tenantId,
-                'user_agent' => $log->userAgent ?? $this->requestMetadata->userAgent(),
+                'user_agent' => $log->captureRequestMetadata ? $log->userAgent ?? $this->requestMetadata->userAgent() : null,
             ];
         }
 

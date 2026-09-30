@@ -18,6 +18,14 @@ Console capture is disabled because Laravel binds a synthetic request while runn
 
 Values set explicitly through `remoteIp()` or `userAgent()` are preserved.
 
+Call `withoutRequestMetadata()` on an individual event to omit both values, including explicit ones. See [redacting sensitive data](advanced-usage/redacting-sensitive-data).
+
+## Sensitive metadata
+
+`audit-log.redaction.exclude` lists metadata keys to remove. `audit-log.redaction.mask` lists keys whose values should be replaced by `audit-log.redaction.replacement`.
+
+Rules apply to event, actor, and target metadata. Both lists are empty by default. Exclusion takes precedence over masking.
+
 ## Storage
 
 `audit-log.storage.connection` and `audit-log.storage.table` select where logs are stored. A `null` connection uses Laravel's default database connection.
