@@ -36,5 +36,5 @@ it('only prunes expired audit logs', function (): void {
         'tenant_id' => 'tenant-1',
     ]);
 
-    expect((new AuditLog())->prunable()->pluck('event')->all())->toBe(['audit.expired']);
+    expect(new AuditLog()->prunable()->pluck('event')->all())->toBe(['audit.expired']);
 });

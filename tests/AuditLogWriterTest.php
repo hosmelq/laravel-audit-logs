@@ -54,7 +54,7 @@ it('writes audit logs to the configured table', function (): void {
     Config::set('database.migrations', 'audit_writer_migrations');
     Config::set('audit-log.storage.table', 'custom_audit_logs');
 
-    $migrationPath = dirname(__DIR__).'/database/migrations';
+    $migrationPath = __DIR__.'/../database/migrations';
 
     app()->forgetInstance('migration.repository');
     app()->forgetInstance('migrator');

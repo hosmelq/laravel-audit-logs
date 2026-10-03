@@ -6,7 +6,9 @@ use function Pest\Laravel\freezeSecond;
 
 use HosmelQ\AuditLog\Tests\TestCase;
 
-uses(TestCase::class)->in(__DIR__)
+pest()
+    ->extend(TestCase::class)
+    ->in(__DIR__)
     ->beforeEach(function (): void {
         freezeSecond();
     });
