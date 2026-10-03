@@ -6,7 +6,7 @@ weight: 2
 
 ## Requirements
 
-Laravel Audit Logs requires PHP 8.3 or later and Laravel 12 or 13.
+Laravel Audit Logs requires PHP 8.4 or later and Laravel 12 or 13.
 
 ## Install the package
 
