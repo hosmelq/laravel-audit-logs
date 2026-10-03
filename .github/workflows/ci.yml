@@ -2,68 +2,51 @@ name: Continuous Integration
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
 
 concurrency:
   cancel-in-progress: true
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
 
+permissions:
+  contents: read
+
 jobs:
-  check-unused-composer-dependencies:
-    name: Check unused composer dependencies
+  quality:
+    name: Quality checks
 
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check unused composer dependencies
-        uses: hosmelq/.github/.github/actions/composer-unused-dependencies-check@3f9f936931ed05c535647b8988a006be574650cc
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up PHP
+        uses: hosmelq/.github/.github/actions/php-setup@5e5ccc13198e5168b27d183874b0ec86d0029071
         with:
-          php-version: '8.3'
+          php-tools: cs2pr
+          php-version: '8.4'
+        env:
+          fail-fast: true
 
-  check-composer:
-    name: Check composer
+      - name: Install composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
 
-    runs-on: ubuntu-latest
+      - name: Check composer
+        run: composer normalize --dry-run
 
-    steps:
-      - name: Check composer normalize
-        uses: hosmelq/.github/.github/actions/composer-normalize-check@3f9f936931ed05c535647b8988a006be574650cc
-        with:
-          php-version: '8.3'
-
-  check-static-code:
-    name: Check static code
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check static code
-        uses: hosmelq/.github/.github/actions/phpstan-check@3f9f936931ed05c535647b8988a006be574650cc
-        with:
-          php-version: '8.3'
-
-  check-code-quality:
-    name: Check code quality
-
-    runs-on: ubuntu-latest
-
-    steps:
       - name: Check code quality
-        uses: hosmelq/.github/.github/actions/php-rector-check@3f9f936931ed05c535647b8988a006be574650cc
-        with:
-          php-version: '8.3'
+        run: vendor/bin/rector --ansi --dry-run
 
-  check-code-style:
-    name: Check code style
-
-    runs-on: ubuntu-latest
-
-    steps:
       - name: Check code style
-        uses: hosmelq/.github/.github/actions/php-pint-check@3f9f936931ed05c535647b8988a006be574650cc
-        with:
-          php-version: '8.3'
+        run: vendor/bin/pint --test
+
+      - name: Check static code
+        run: composer phpstan
+
+      - name: Check unused composer dependencies
+        run: vendor/bin/composer-dependency-analyser
 
   tests:
     name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }}
@@ -75,7 +58,7 @@ jobs:
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
           MYSQL_DATABASE: laravel_auditlogs_testing
-        image: mysql:8.4
+        image: mysql:8.4@sha256:0744ee5ef89ce6ccfa13de3e579fe6b9e27f93dd70da9c06d2c908b1b193fb8d
         options: >-
           --health-cmd="mysqladmin ping --silent"
           --health-interval=10s
@@ -87,7 +70,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.3', '8.4', '8.5']
+        php: ['8.4', '8.5']
         laravel: ['12.*', '13.*']
         stability: [prefer-stable]
         include:
@@ -98,17 +81,23 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up PHP
+        uses: hosmelq/.github/.github/actions/php-setup@5e5ccc13198e5168b27d183874b0ec86d0029071
+        with:
+          php-tools: cs2pr
+          php-version: ${{ matrix.php }}
+        env:
+          fail-fast: true
 
       - name: Install composer dependencies
-        uses: hosmelq/.github/.github/actions/composer-install@3f9f936931ed05c535647b8988a006be574650cc
-        with:
-          php-version: ${{ matrix.php }}
+        run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: Installed dependencies
         run: composer show -D
 
-      - name: Setup problem matchers
+      - name: Set up problem matchers
         run: |
           echo "::add-matcher::${{ runner.tool_cache }}/php.json"
           echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
