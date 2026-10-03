@@ -1,12 +1,12 @@
 ---
 title: "Querying Audit Logs"
-description: "Query stored events and work with their structured attributes."
+description: "Query stored logs with Eloquent and work with their columns."
 weight: 4
 ---
 
 ## Query with Eloquent
 
-Use the package model like any other Eloquent model:
+Query stored logs with the `HosmelQ\AuditLog\Models\AuditLog` model:
 
 ```php
 use HosmelQ\AuditLog\Models\AuditLog;
@@ -18,16 +18,50 @@ $logs = AuditLog::query()
     ->get();
 ```
 
-The model uses the configured database connection and table.
+The model uses the connection and table from the `audit-log.storage` options. To add scopes or relationships, [extend the model](../advanced-usage/custom-audit-log-model).
 
-## Work with stored values
+## Columns
 
-The following columns are cast automatically:
+| Column | Type | Description |
+| --- | --- | --- |
+| `id` | string | Log ID. |
+| `event` | string | Event name. |
+| `tenant_id` | string | Tenant ID, or an empty string. |
+| `actor_id` | string | Actor ID. |
+| `actor_type` | string | Actor type. |
+| `actor_name` | string or null | Actor display name. |
+| `actor_metadata` | array | Actor metadata. |
+| `targets` | array | List of targets. Each target has `id`, `type`, `name`, and `metadata` keys. |
+| `metadata` | array | Event metadata. |
+| `attribute_changes` | array or null | Changed attributes under `before` and `after` keys. See [attribute changes](recording-changes). |
+| `description` | string | Description, or an empty string. |
+| `bucket` | string | Bucket. |
+| `source` | string | Source. |
+| `correlation_id` | string or null | Correlation ID shared by related logs. |
+| `remote_ip` | string or null | Remote IP of the request. |
+| `user_agent` | string or null | User agent of the request. |
+| `occurred_at` | `CarbonImmutable` | When the event happened. |
+| `inserted_at` | `CarbonImmutable` | When the log was written. |
+| `expires_at` | `CarbonImmutable` or null | When the log becomes eligible for [pruning](../configuration#retention). |
 
-- `actor_metadata`, `metadata`, and `targets` are arrays.
-- `changes` is an array containing `before` and `after`, or null when no changes were provided.
-- `occurred_at`, `inserted_at`, and `expires_at` are immutable dates.
+Array columns are stored as JSON and cast to PHP arrays. Date columns are stored with millisecond precision.
 
-Common indexed filters include `tenant_id`, `bucket`, `event`, `actor_id`, `actor_type`, `correlation_id`, and the date columns. The composite index on `tenant_id`, `bucket`, `occurred_at`, and `id` supports tenant-scoped chronological queries.
+## Indexes
 
-Extend the package model when your application needs reusable scopes, relationships, or additional casts. See [customizing the audit log model](../advanced-usage/custom-audit-log-model).
+The table has single-column indexes on `event`, `actor_id`, `actor_type`, `correlation_id`, `occurred_at`, `inserted_at`, and `expires_at`. A composite index on `tenant_id`, `bucket`, `occurred_at`, and `id` supports listing a tenant's logs in chronological order. Filter by `tenant_id` first to use it.
+
+## Query JSON columns
+
+Use Laravel's JSON query methods to filter by metadata or targets:
+
+```php
+use HosmelQ\AuditLog\Models\AuditLog;
+
+$logs = AuditLog::query()
+    ->where('tenant_id', 'org_123')
+    ->where('metadata->visibility', 'public')
+    ->whereJsonContains('targets', [['type' => 'document', 'id' => 'doc_123']])
+    ->get();
+```
+
+`whereJsonContains()` requires a database that supports JSON containment, such as MySQL or PostgreSQL. JSON columns are not indexed, so combine these filters with an indexed column.

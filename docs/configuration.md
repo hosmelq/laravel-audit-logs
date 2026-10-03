@@ -1,44 +1,51 @@
 ---
 title: "Configuration"
-description: "Configure defaults, request metadata, retention, and storage."
+description: "Configure default attributes, request metadata, redaction, retention, and storage."
 weight: 3
 ---
 
-The published `config/audit-log.php` file controls default attributes, request metadata, retention, and database storage.
+The published `config/audit-log.php` file contains five groups of options. Most options can be set through environment variables; see the [table at the end of this page](#environment-variables).
 
 ## Default attributes
 
-`audit-log.defaults.bucket` and `audit-log.defaults.source` fill missing `bucket` and `source` values when a log is prepared. Explicit values always take precedence.
+| Option | Default | Description |
+| --- | --- | --- |
+| `defaults.bucket` | `application` | Bucket used when a log does not set one. |
+| `defaults.source` | `platform` | Source used when a log does not set one. |
+
+The builder applies these defaults when it prepares a log. Values passed to `bucket()` and `source()` take precedence. `AuditLogData` objects you create yourself must set both values.
 
 ## Request metadata
 
-The package can fill missing `remoteIp` and `userAgent` values from the current request. Remote IP and user agent capture are enabled by default.
+| Option | Default | Description |
+| --- | --- | --- |
+| `request.capture_remote_ip` | `true` | Fill a missing remote IP from the current request. |
+| `request.capture_user_agent` | `true` | Fill a missing user agent from the current request. |
+| `request.capture_in_console` | `false` | Allow capture while the application runs in the console. |
 
-Console capture is disabled because Laravel binds a synthetic request while running Artisan. Enable `audit-log.request.capture_in_console` only when that request should be used.
+Console capture is disabled because Laravel binds a synthetic request when running Artisan commands. Queue workers also run in the console, so logs recorded from queued jobs have no request metadata unless you set it yourself. Enable `capture_in_console` only when the console request holds the values you want to store.
 
-Values set explicitly through `remoteIp()` or `userAgent()` are preserved.
+See [request metadata](basic-usage/recording-audit-logs#request-metadata) for how captured and explicit values are combined.
 
-Call `withoutRequestMetadata()` on an individual event to omit both values, including explicit ones. See [redacting sensitive data](advanced-usage/redacting-sensitive-data).
+## Redaction
 
-## Sensitive metadata
+| Option | Default | Description |
+| --- | --- | --- |
+| `redaction.exclude` | `[]` | Metadata keys removed from logs. |
+| `redaction.mask` | `[]` | Metadata keys whose values are replaced. |
+| `redaction.replacement` | `[REDACTED]` | Value stored for masked keys. |
 
-`audit-log.redaction.exclude` lists metadata keys to remove. `audit-log.redaction.mask` lists keys whose values should be replaced by `audit-log.redaction.replacement`.
+Both lists must contain only strings; any other value throws an `InvalidArgumentException` when a log is recorded. See [redacting sensitive data](advanced-usage/redacting-sensitive-data) for how the rules are applied.
 
-Rules apply to event, actor, and target metadata. Both lists are empty by default. Exclusion takes precedence over masking.
+## Retention
 
-## Storage
+| Option | Default | Description |
+| --- | --- | --- |
+| `retention.days` | `null` | Number of days to keep new logs, or `null` to keep them indefinitely. |
 
-`audit-log.storage.connection` and `audit-log.storage.table` select where logs are stored. A `null` connection uses Laravel's default database connection.
+When a log is written, its `expires_at` value is set to `occurred_at` plus the configured number of days. A `null` value leaves `expires_at` empty, and `0` makes logs expire as soon as they occur. Changing the option does not update rows that already exist. A negative value throws an `InvalidArgumentException` when a log is written.
 
-Batch inserts are split by `audit-log.storage.insert_chunk_size`. All chunks from one `record()` call are written inside the same database transaction. The chunk size must be greater than zero.
-
-## Retention and pruning
-
-Set `audit-log.retention.days` to a non-negative number of days or `null`. A `null` value keeps new audit logs indefinitely.
-
-When a log is written, its `expires_at` value is calculated from `occurred_at` using the current retention setting. Changing the setting does not update rows that already exist.
-
-The package model uses Laravel's `MassPrunable` trait. Schedule `model:prune` to delete rows whose `expires_at` value has passed:
+The package model uses Laravel's `MassPrunable` trait. Schedule the `model:prune` command to delete expired rows:
 
 ```php
 use HosmelQ\AuditLog\Models\AuditLog;
@@ -49,18 +56,32 @@ Schedule::command('model:prune', [
 ])->daily();
 ```
 
-Only rows with a non-null, expired `expires_at` value are pruned.
+The command deletes rows whose `expires_at` value is not null and is in the past. Rows without an expiration date are never pruned. If you register a [custom model](advanced-usage/custom-audit-log-model), you may pass that class instead.
+
+## Storage
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `storage.connection` | `null` | Database connection for audit logs. `null` uses the default connection. |
+| `storage.table` | `audit_logs` | Table that stores audit logs. |
+| `storage.insert_chunk_size` | `500` | Maximum number of rows per insert statement. |
+
+The migrations, the model, and the writer all read the connection and table from this group, so set them before running the migrations.
+
+Each `record()` call writes its logs inside one database transaction. Larger batches are split into insert statements of `insert_chunk_size` rows, and every chunk is rolled back if one fails. The chunk size must be at least `1`; a smaller value throws an `InvalidArgumentException` when a log is written.
 
 ## Environment variables
 
-| Configuration key | Environment variable | Default |
-| --- | --- | --- |
-| `defaults.bucket` | `AUDIT_LOG_DEFAULTS_BUCKET` | `application` |
-| `defaults.source` | `AUDIT_LOG_DEFAULTS_SOURCE` | `platform` |
-| `request.capture_in_console` | `AUDIT_LOG_REQUEST_CAPTURE_IN_CONSOLE` | `false` |
-| `request.capture_remote_ip` | `AUDIT_LOG_REQUEST_CAPTURE_REMOTE_IP` | `true` |
-| `request.capture_user_agent` | `AUDIT_LOG_REQUEST_CAPTURE_USER_AGENT` | `true` |
-| `retention.days` | `AUDIT_LOG_RETENTION_DAYS` | `null` |
-| `storage.connection` | `AUDIT_LOG_STORAGE_CONNECTION` | `null` |
-| `storage.insert_chunk_size` | `AUDIT_LOG_STORAGE_INSERT_CHUNK_SIZE` | `500` |
-| `storage.table` | `AUDIT_LOG_STORAGE_TABLE` | `audit_logs` |
+| Option | Environment variable |
+| --- | --- |
+| `defaults.bucket` | `AUDIT_LOG_DEFAULTS_BUCKET` |
+| `defaults.source` | `AUDIT_LOG_DEFAULTS_SOURCE` |
+| `request.capture_in_console` | `AUDIT_LOG_REQUEST_CAPTURE_IN_CONSOLE` |
+| `request.capture_remote_ip` | `AUDIT_LOG_REQUEST_CAPTURE_REMOTE_IP` |
+| `request.capture_user_agent` | `AUDIT_LOG_REQUEST_CAPTURE_USER_AGENT` |
+| `retention.days` | `AUDIT_LOG_RETENTION_DAYS` |
+| `storage.connection` | `AUDIT_LOG_STORAGE_CONNECTION` |
+| `storage.insert_chunk_size` | `AUDIT_LOG_STORAGE_INSERT_CHUNK_SIZE` |
+| `storage.table` | `AUDIT_LOG_STORAGE_TABLE` |
+
+The redaction options have no environment variables. Edit the lists in `config/audit-log.php`.

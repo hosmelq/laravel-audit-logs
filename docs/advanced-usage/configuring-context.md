@@ -1,38 +1,56 @@
 ---
 title: "Configuring Audit Context"
-description: "Resolve default actors and tenants from your application."
-weight: 3
+description: "Resolve the default actor and tenant from your application."
+weight: 1
 ---
 
-Use context resolvers when your application should provide the actor or tenant for events recorded through the fluent builder.
+Context resolvers supply the actor and tenant for logs that do not set them. Register them once instead of calling `actor()` and `tenant()` for every event.
 
 ## Register resolvers
 
-Register the callbacks in your application's service provider `boot()` method:
+Register the resolvers in the `boot()` method of a service provider:
 
 ```php
-use HosmelQ\AuditLog\AuditLogContext;
-use HosmelQ\AuditLog\Contracts\HasAuditLogIdentity;
+namespace App\Providers;
 
-AuditLogContext::resolveActorUsing(fn (): ?HasAuditLogIdentity => auth()->user());
-AuditLogContext::resolveTenantUsing(fn (): ?string => app(CurrentTenant::class)->id());
+use App\Models\User;
+use HosmelQ\AuditLog\AuditLogContext;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    public function boot(): void
+    {
+        AuditLogContext::resolveActorUsing(fn (): ?User => Auth::user());
+        AuditLogContext::resolveTenantUsing(fn (): ?int => Auth::user()?->current_team_id);
+    }
+}
 ```
 
-The actor resolver may return an `AuditLogActorData`, `AuditLogIdentity`, an object implementing `HasAuditLogIdentity`, or `null`. The tenant resolver may return an integer, string, or `null`.
+In this example, `User` implements [`HasAuditLogIdentity`](../basic-usage/audit-log-identities#reuse-application-objects).
 
-## Understand default values
+The actor resolver may return:
 
-The fluent builder invokes resolvers for missing values when `toAuditLogData()` or `record()` is called:
+- An object implementing `HasAuditLogIdentity`.
+- An `AuditLogIdentity` or `AuditLogActorData` object.
+- `null`, which uses the system actor with the ID `system`, type `system`, and name `System`.
 
-- Explicit actors and tenants take precedence, including an empty tenant or zero ID.
-- A null actor falls back to the system actor.
-- A null tenant becomes an empty string.
-- Prepared `AuditLogData` objects keep their explicit context.
+The tenant resolver may return an integer, a string, or `null`. A `null` tenant is stored as an empty string.
 
-Pass `null` to either registration method to clear its resolver.
+Pass `null` to `resolveActorUsing()` or `resolveTenantUsing()` to remove a resolver.
 
-## Use long-running workers
+## When resolvers run
 
-The context instance is scoped to the current request or job. Registered callbacks remain available across scopes, and their results are evaluated for each log.
+The builder calls a resolver when `toAuditLogData()` or `record()` prepares a log that has no actor or tenant:
 
-Resolve the current user and tenant inside the callback when using Octane or queue workers. Avoid capturing request-specific objects during registration. Register callbacks in a service provider so Laravel's configuration cache remains usable.
+- Values set with `actor()` and `tenant()` take precedence, and the resolver is not called. This includes values such as an empty string or `0`.
+- Resolvers run again for every log. Their results are not cached.
+- Exceptions thrown by a resolver are not caught and propagate to the code recording the log.
+- `AuditLogData` objects you create yourself are recorded as provided. Resolvers do not change them.
+
+## Octane and queue workers
+
+Resolvers are stored for the lifetime of the PHP process, not per request. Read the current user or tenant inside the closure, as in the example above, so each log uses the values of the current request or job. Do not capture a request, user, or tenant object when registering the resolver.
+
+Queued jobs usually have no authenticated user, so the actor resolver returns `null` and logs use the system actor unless the job sets an actor explicitly.

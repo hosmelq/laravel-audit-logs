@@ -1,12 +1,12 @@
 ---
 title: "Redacting Sensitive Data"
-description: "Exclude or mask metadata fields and omit request metadata for individual events."
-weight: 4
+description: "Exclude or mask metadata keys and omit request metadata for individual events."
+weight: 2
 ---
 
-## Configure metadata rules
+## Configure redaction rules
 
-Set the metadata keys that should be excluded or masked in `config/audit-log.php`:
+List the metadata keys to exclude or mask in `config/audit-log.php`:
 
 ```php
 'redaction' => [
@@ -16,27 +16,39 @@ Set the metadata keys that should be excluded or masked in `config/audit-log.php
 ],
 ```
 
-Rules apply to metadata belonging to the event, its actor, and every target. Keys are matched exactly and are case-sensitive. An excluded key is removed; a masked key keeps its name and receives the replacement string. Exclusion takes precedence when a key appears in both lists.
+When a log is recorded:
 
-The same rules apply to attribute names in [recorded changes](../basic-usage/recording-changes).
+- An excluded key is removed.
+- A masked key keeps its name, and its value is replaced with the `replacement` string. Masking does not add keys that are missing.
+- A key listed in both `exclude` and `mask` is excluded.
 
-Both lists are empty by default. Rules affect logs when they are recorded and do not update existing rows. Actor and target IDs, types, names, and the event description are preserved, so avoid placing secrets in those fields.
+Rules apply to the event metadata, the actor metadata, the metadata of every target, and the attribute names in [attribute changes](../basic-usage/recording-changes#redact-changes). Both lists are empty by default, so metadata is stored as provided.
+
+## How keys are matched
+
+- Keys are matched exactly and are case-sensitive. A `password` rule does not match `Password`.
+- Only top-level keys are matched. Values inside nested arrays are not inspected.
+- Actor and target IDs, types, and names, and the event description, are never redacted. Do not put secrets in those fields.
+
+Redaction happens when a log is recorded. Changing the rules does not update rows that already exist.
 
 ## Omit request metadata
 
-Call `withoutRequestMetadata()` when an event should not include a remote IP or user agent:
+Call `withoutRequestMetadata()` when a log should not store a remote IP or user agent:
 
 ```php
 use function HosmelQ\AuditLog\audit_log;
 
-audit_log('document.published')
+audit_log('auth.password.reset')
     ->tenant('org_123')
     ->withoutRequestMetadata()
     ->record();
 ```
 
-The option omits both values, including values provided explicitly. Prepared `AuditLogData` objects may set `captureRequestMetadata: false` for the same behavior.
+Both values are omitted, including values set with `remoteIp()` and `userAgent()`. To disable capture for every log instead, use the `audit-log.request` [configuration options](../configuration#request-metadata).
 
-## Test redacted logs
+For `AuditLogData` objects you create yourself, pass `captureRequestMetadata: false` for the same result.
 
-`AuditLog::fake()` applies the same redaction rules as database storage. Assertions inspect the redacted payload. The original prepared data object is preserved.
+## Testing
+
+`AuditLog::fake()` applies the same rules before storing logs in memory, so assertions see the redacted values. See [testing audit logs](../basic-usage/testing).

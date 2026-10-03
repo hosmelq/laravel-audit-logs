@@ -1,12 +1,12 @@
 ---
 title: "Testing Audit Logs"
-description: "Fake the manager and assert application audit behavior."
+description: "Replace the database with an in-memory fake and assert recorded logs."
 weight: 5
 ---
 
-## Fake the audit manager
+## Fake the audit log manager
 
-Call `AuditLog::fake()` to replace the database manager with an in-memory fake:
+Call `AuditLog::fake()` to keep recorded logs in memory instead of writing them to the database:
 
 ```php
 use HosmelQ\AuditLog\Facades\AuditLog;
@@ -22,51 +22,49 @@ audit_log('document.published')
 AuditLog::assertRecorded('document.published');
 ```
 
-The fake preserves the manager's batching, correlation, and metadata redaction behavior without writing to the database.
+The fake replaces the audit log manager for the `audit_log` helper and the facade. It applies the same batch correlation, correlation scopes, and [redaction rules](../advanced-usage/redacting-sensitive-data) as the database manager.
 
-## Assert recorded events
+## Assert recorded logs
 
-Assertions accept event strings or backed enums:
+Each assertion accepts an event name or a backed enum:
 
 ```php
 AuditLog::assertRecorded('document.published');
 AuditLog::assertNotRecorded('document.archived');
-AuditLog::assertRecordedInCorrelation('document.published', 'notification.sent');
-AuditLog::assertRecordedTimes('document.published', 1);
-```
-
-Use `assertNothingRecorded` when no logs should have been recorded:
-
-```php
+AuditLog::assertRecordedTimes('document.published', 2);
 AuditLog::assertNothingRecorded();
 ```
 
-`assertRecorded()` and `assertNotRecorded()` also accept closures when an assertion depends on the complete payload.
+`assertRecordedTimes()` expects exactly one log when you omit the count.
 
 ## Inspect recorded data
 
-Pass a closure to inspect matching `AuditLogData` objects:
+`assertRecorded()`, `assertNotRecorded()`, and `assertRecordedTimes()` also accept a closure. The closure receives each recorded `AuditLogData` object and returns `true` for matching logs:
 
 ```php
 use HosmelQ\AuditLog\Data\AuditLogData;
 use HosmelQ\AuditLog\Facades\AuditLog;
 
-AuditLog::assertRecorded(function (AuditLogData $log): bool {
-    return $log->event === 'document.published'
-        && $log->tenantId === 'org_123'
-        && $log->actor->id === 'member_123';
-});
+AuditLog::assertRecorded(fn (AuditLogData $log): bool => $log->event === 'document.updated'
+    && $log->tenantId === 'org_123'
+    && $log->actor->id === 'member_123'
+    && $log->changes?->toArray() === [
+        'before' => ['published' => false],
+        'after' => ['published' => true],
+    ]);
 ```
 
-Retrieve recorded logs as a collection and filter them by event string, backed enum, or closure:
+The data object exposes the same values as the stored row: `actor` and `targets` hold `AuditLogActorData` and `AuditLogTargetData` objects, and `changes` holds an `AuditLogChangesData` object or `null` (stored in the `attribute_changes` column). Call `toArray()` on any of them for an array.
+
+Use `recorded()` to retrieve logs as a collection, optionally filtered by event name, backed enum, or closure:
 
 ```php
 use HosmelQ\AuditLog\Data\AuditLogData;
 use HosmelQ\AuditLog\Facades\AuditLog;
 
 $all = AuditLog::recorded();
-$logs = AuditLog::recorded('document.published');
-$filtered = AuditLog::recorded(fn (AuditLogData $log): bool => $log->tenantId === 'org_123');
+$published = AuditLog::recorded('document.published');
+$tenantLogs = AuditLog::recorded(fn (AuditLogData $log): bool => $log->tenantId === 'org_123');
 ```
 
 ## Assert correlations
@@ -74,10 +72,24 @@ $filtered = AuditLog::recorded(fn (AuditLogData $log): bool => $log->tenantId ==
 Use `assertRecordedInCorrelation()` when several events must share one correlation ID:
 
 ```php
-AuditLog::assertRecordedInCorrelation(
-    'document.published',
-    'notification.sent',
-);
+AuditLog::assertRecordedInCorrelation('document.published', 'notification.sent');
 ```
 
-The assertion passes only when one correlation contains every expected event.
+The assertion passes when at least one correlation ID is shared by logs for every listed event. Logs without a correlation ID are ignored. See [correlating logs](../advanced-usage/correlating-logs).
+
+## Differences from the database
+
+- Recorded logs reflect the redaction rules configured when `record()` is called. The `AuditLogData` objects you pass in are not changed.
+- Request metadata is read when the builder prepares a log. Tests run in the console, so the builder captures it only when `audit-log.request.capture_in_console` is enabled. Like database storage, the fake fills a missing remote IP and user agent on `AuditLogData` objects you create yourself, unless `captureRequestMetadata` is `false`.
+- Retention and storage options are not used.
+
+## Reset context resolvers
+
+[Context resolvers](../advanced-usage/configuring-context) are stored statically and are not reset between tests. Clear any resolver a test registers:
+
+```php
+use HosmelQ\AuditLog\AuditLogContext;
+
+AuditLogContext::resolveActorUsing(null);
+AuditLogContext::resolveTenantUsing(null);
+```
