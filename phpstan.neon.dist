@@ -13,10 +13,10 @@ parameters:
   configDirectories:
     - config
   editorUrl: 'phpstorm://open?file=%%file%%&line=%%line%%'
-  noUnnecessaryEnumerableToArrayCalls: true
   errorFormat: ticketswap
   level: max
   noEnvCallsOutsideOfConfig: true
+  noUnnecessaryEnumerableToArrayCalls: true
   paths:
     - config
     - src
@@ -31,3 +31,6 @@ parameters:
     null_over_false: true
     narrow_param: true
     narrow_return: true
+  tips:
+    treatPhpDocTypesAsCertain: false
+  tmpDir: .cache/phpstan

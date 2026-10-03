@@ -71,15 +71,7 @@ final class AuditLogFake implements AuditLogManager
         $matchingCorrelationId = null;
 
         foreach ($correlations as $correlationId => $correlatedEvents) {
-            $containsEveryEvent = true;
-
-            foreach ($eventValues as $event) {
-                if (! isset($correlatedEvents[$event])) {
-                    $containsEveryEvent = false;
-
-                    break;
-                }
-            }
+            $containsEveryEvent = array_all($eventValues, fn (string $event): bool => isset($correlatedEvents[$event]));
 
             if ($containsEveryEvent) {
                 $matchingCorrelationId = $correlationId;
@@ -196,12 +188,6 @@ final class AuditLogFake implements AuditLogManager
             return false;
         }
 
-        foreach ($logs as $log) {
-            if ($log->correlationId === null) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($logs, fn (AuditLogData $log): bool => $log->correlationId === null);
     }
 }

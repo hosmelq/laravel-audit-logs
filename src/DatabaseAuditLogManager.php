@@ -121,12 +121,6 @@ final class DatabaseAuditLogManager implements AuditLogManagerContract
             return false;
         }
 
-        foreach ($logs as $log) {
-            if ($log->correlationId === null) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($logs, fn (AuditLogData $log): bool => $log->correlationId === null);
     }
 }
