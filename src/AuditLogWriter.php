@@ -66,7 +66,7 @@ final readonly class AuditLogWriter
 
             $auditLogs[] = [
                 'actor_id' => $log->actor->id,
-                'actor_metadata' => json_encode((object) $log->actor->metadata, JSON_THROW_ON_ERROR),
+                'actor_metadata' => json_encode((object) $log->actor->metadata, JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION),
                 'actor_name' => $log->actor->name,
                 'actor_type' => $log->actor->type,
                 'bucket' => $log->bucket,
@@ -80,11 +80,11 @@ final readonly class AuditLogWriter
                 'expires_at' => $expiresAt instanceof CarbonInterface ? $this->date($expiresAt) : null,
                 'id' => $log->id,
                 'inserted_at' => $this->date($insertedAt),
-                'metadata' => json_encode((object) $log->metadata, JSON_THROW_ON_ERROR),
+                'metadata' => json_encode((object) $log->metadata, JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION),
                 'occurred_at' => $this->date($occurredAt),
                 'remote_ip' => $log->remoteIp,
                 'source' => $log->source,
-                'targets' => json_encode($targets, JSON_THROW_ON_ERROR),
+                'targets' => json_encode($targets, JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION),
                 'tenant_id' => $log->tenantId,
                 'user_agent' => $log->userAgent,
             ];

@@ -168,6 +168,29 @@ it('writes audit log payloads to the database', function (): void {
         ->value('metadata_type'))->toBe('OBJECT');
 });
 
+it('preserves float types in event actor and target metadata after database storage', function (): void {
+    $metadata = ['count' => 1, 'ratio' => 1.0, 'zero' => 0.0];
+
+    resolve(AuditLogWriter::class)->write([
+        new AuditLogData(
+            actor: new AuditLogActorData(metadata: $metadata),
+            bucket: 'security',
+            event: 'account.updated',
+            source: 'tests',
+            metadata: $metadata,
+            targets: [new AuditLogTargetData(id: 'account-1', metadata: $metadata)],
+        ),
+    ]);
+
+    $stored = AuditLog::query()->firstOrFail();
+
+    foreach ([$stored->metadata, $stored->actor_metadata, $stored->targets[0]['metadata']] as $values) {
+        expect($values['count'])->toBe(1)
+            ->and($values['ratio'])->toBe(1.0)
+            ->and($values['zero'])->toBe(0.0);
+    }
+});
+
 it('keeps the default occurrence time from when the log was created', function (): void {
     $log = new AuditLogData(
         actor: new AuditLogActorData(),
