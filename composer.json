@@ -3,7 +3,6 @@
     "description": "Structured audit logs for Laravel with actors, targets, and request metadata.",
     "license": "MIT",
     "keywords": [
-        "hosmelq",
         "audit",
         "audit-log",
         "audit-trail",
