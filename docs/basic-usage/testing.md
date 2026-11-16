@@ -1,6 +1,6 @@
 ---
 title: "Testing Audit Logs"
-description: "Replace the database with an in-memory fake and assert recorded logs."
+description: "Replace the audit log database with an in-memory fake in your tests and assert which logs were recorded."
 weight: 5
 ---
 

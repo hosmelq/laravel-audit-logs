@@ -1,6 +1,6 @@
 ---
 title: "Querying Audit Logs"
-description: "Query stored logs with Eloquent and work with their columns."
+description: "Query stored audit logs with Eloquent and work with their columns, actors, targets, and metadata."
 weight: 4
 ---
 

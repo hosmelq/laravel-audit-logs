@@ -1,6 +1,6 @@
 ---
 title: "Actors and Targets"
-description: "Describe who performed an event and which resources it affected."
+description: "Describe who performed an audit event and which resources it affected, with actors and targets."
 weight: 2
 ---
 

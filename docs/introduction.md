@@ -1,6 +1,6 @@
 ---
 title: "Introduction"
-description: "Record structured, queryable audit events in Laravel applications."
+description: "Laravel Audit Logs records structured, queryable audit events with actors, targets, and request metadata."
 weight: 1
 ---
 

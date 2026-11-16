@@ -1,6 +1,6 @@
 ---
 title: "Configuring Audit Context"
-description: "Resolve the default actor and tenant from your application."
+description: "Resolve the default actor and tenant for every audit log from your Laravel application."
 weight: 1
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Recording Audit Logs"
-description: "Record audit events with the builder, the facade, or data objects."
+description: "Record audit events in a Laravel application with the builder, the facade, or data objects."
 weight: 1
 ---
 
