@@ -28,8 +28,8 @@ it('throws an audit log identity exception when a scalar target is missing its i
 });
 
 it('does not invoke context resolvers for explicit attributes', function (): void {
-    AuditLogContext::resolveActorUsing(fn () => throw new RuntimeException('Actor resolver called'));
-    AuditLogContext::resolveTenantUsing(fn () => throw new RuntimeException('Tenant resolver called'));
+    AuditLogContext::resolveActorUsing(fn (): never => throw new RuntimeException('Actor resolver called'));
+    AuditLogContext::resolveTenantUsing(fn (): never => throw new RuntimeException('Tenant resolver called'));
 
     expect(audit_log('account.updated')->actor('user', 0)->tenant(0)->toAuditLogData())
         ->actor->id->toBe('0')->tenantId->toBe('0');

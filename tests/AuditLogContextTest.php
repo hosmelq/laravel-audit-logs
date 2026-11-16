@@ -10,7 +10,7 @@ use HosmelQ\AuditLog\Tests\TestSupport\TestUser;
 it('propagates actor resolver failures', function (): void {
     $context = resolve(AuditLogContext::class);
 
-    AuditLogContext::resolveActorUsing(fn () => throw new RuntimeException('Actor context failed'));
+    AuditLogContext::resolveActorUsing(fn (): never => throw new RuntimeException('Actor context failed'));
 
     expect(fn () => $context->actor())->toThrow(RuntimeException::class, 'Actor context failed');
 });
@@ -18,7 +18,7 @@ it('propagates actor resolver failures', function (): void {
 it('propagates tenant resolver failures', function (): void {
     $context = resolve(AuditLogContext::class);
 
-    AuditLogContext::resolveTenantUsing(fn () => throw new RuntimeException('Tenant context failed'));
+    AuditLogContext::resolveTenantUsing(fn (): never => throw new RuntimeException('Tenant context failed'));
 
     expect(fn () => $context->tenant())->toThrow(RuntimeException::class, 'Tenant context failed');
 });
