@@ -11,6 +11,7 @@ use HosmelQ\AuditLog\Data\AuditLogData;
 use HosmelQ\AuditLog\Support\Enum;
 use HosmelQ\AuditLog\Support\RequestMetadata;
 use Illuminate\Support\Collection;
+use Override;
 use PHPUnit\Framework\Assert as PHPUnit;
 
 final class AuditLogFake implements AuditLogManager
@@ -23,8 +24,7 @@ final class AuditLogFake implements AuditLogManager
     public function __construct(
         private readonly AuditLogCorrelation $correlation = new AuditLogCorrelation(),
         private readonly AuditLogRedactor $redactor = new AuditLogRedactor(),
-    ) {
-    }
+    ) {}
 
     public function assertNothingRecorded(): void
     {
@@ -60,7 +60,6 @@ final class AuditLogFake implements AuditLogManager
             Enum::value(...),
             $events,
         )));
-
         $correlations = [];
 
         foreach ($this->recorded as $log) {
@@ -74,7 +73,10 @@ final class AuditLogFake implements AuditLogManager
         $matchingCorrelationId = null;
 
         foreach ($correlations as $correlationId => $correlatedEvents) {
-            $containsEveryEvent = array_all($eventValues, fn (string $event): bool => isset($correlatedEvents[$event]));
+            $containsEveryEvent = array_all(
+                $eventValues,
+                fn (string $event): bool => isset($correlatedEvents[$event]),
+            );
 
             if ($containsEveryEvent) {
                 $matchingCorrelationId = $correlationId;
@@ -105,6 +107,7 @@ final class AuditLogFake implements AuditLogManager
      *
      * @return TReturn
      */
+    #[Override]
     public function correlate(Closure $callback, null|string $id = null): mixed
     {
         return $this->correlation->run($callback, $id);
@@ -113,6 +116,7 @@ final class AuditLogFake implements AuditLogManager
     /**
      * @param AuditLogData|iterable<AuditLogData> $logs
      */
+    #[Override]
     public function record(AuditLogData|iterable $logs): void
     {
         $logs = $this->logs($logs);
@@ -131,8 +135,9 @@ final class AuditLogFake implements AuditLogManager
             $log = $log->correlationId === null && $correlationId !== null
                 ? $log->withCorrelationId($correlationId)
                 : $log;
-
-            $this->recorded[] = $this->redactor->redact(resolve(RequestMetadata::class)->fill($log));
+            $this->recorded[] = $this->redactor->redact(
+                resolve(RequestMetadata::class)->fill($log),
+            );
         }
     }
 

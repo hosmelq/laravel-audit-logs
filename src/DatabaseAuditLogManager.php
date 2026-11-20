@@ -9,6 +9,7 @@ use HosmelQ\AuditLog\Contracts\AuditLogManager as AuditLogManagerContract;
 use HosmelQ\AuditLog\Data\AuditLogData;
 use HosmelQ\AuditLog\Models\AuditLog as AuditLogModel;
 use InvalidArgumentException;
+use Override;
 
 final class DatabaseAuditLogManager implements AuditLogManagerContract
 {
@@ -20,8 +21,7 @@ final class DatabaseAuditLogManager implements AuditLogManagerContract
     public function __construct(
         private readonly AuditLogCorrelation $correlation,
         private readonly AuditLogWriter $writer,
-    ) {
-    }
+    ) {}
 
     /**
      * @return class-string<AuditLogModel>
@@ -54,6 +54,7 @@ final class DatabaseAuditLogManager implements AuditLogManagerContract
      *
      * @return TReturn
      */
+    #[Override]
     public function correlate(Closure $callback, null|string $id = null): mixed
     {
         return $this->correlation->run($callback, $id);
@@ -62,6 +63,7 @@ final class DatabaseAuditLogManager implements AuditLogManagerContract
     /**
      * @param AuditLogData|iterable<AuditLogData> $logs
      */
+    #[Override]
     public function record(AuditLogData|iterable $logs): void
     {
         $logs = $this->logs($logs);

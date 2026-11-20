@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace HosmelQ\AuditLog;
 
 use HosmelQ\AuditLog\Contracts\AuditLogManager;
+use Override;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class AuditLogServiceProvider extends PackageServiceProvider
 {
+    #[Override]
     public function configurePackage(Package $package): void
     {
         $package
@@ -23,9 +25,13 @@ final class AuditLogServiceProvider extends PackageServiceProvider
                     ->publishConfigFile()
                     ->publishMigrations();
             })
-            ->hasMigrations(['create_audit_logs_table', 'update_audit_logs_table_with_attribute_changes']);
+            ->hasMigrations([
+                'create_audit_logs_table',
+                'update_audit_logs_table_with_attribute_changes',
+            ]);
     }
 
+    #[Override]
     public function packageRegistered(): void
     {
         $this->app->scoped(AuditLogContext::class);

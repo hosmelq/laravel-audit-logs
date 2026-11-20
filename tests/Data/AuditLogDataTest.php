@@ -51,10 +51,7 @@ it('normalizes numeric entity identifiers', function (): void {
         tenantId: 789,
     );
 
-    expect($log)
-        ->actor->id->toBe('123')
-        ->targets()->{0}->id->toBe('456')
-        ->tenantId->toBe('789');
+    expect($log)->actor->id->toBe('123')->targets()->{0}->id->toBe('456')->tenantId->toBe('789');
 });
 
 it('normalizes blank correlation ids', function (): void {
@@ -154,7 +151,6 @@ it('returns a copy with a correlation id', function (): void {
         event: 'account.updated',
         source: 'tests',
     );
-
     $correlated = $log->withCorrelationId('correlation-1');
 
     expect($log)

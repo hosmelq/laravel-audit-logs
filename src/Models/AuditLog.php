@@ -78,8 +78,6 @@ class AuditLog extends Model
      */
     public function prunable(): Builder
     {
-        return static::query() // @phpstan-ignore-line staticMethod.dynamicCall
-            ->whereNotNull('expires_at')
-            ->where('expires_at', '<=', Date::now());
+        return static::query()->whereNotNull('expires_at')->where('expires_at', '<=', Date::now());
     }
 }

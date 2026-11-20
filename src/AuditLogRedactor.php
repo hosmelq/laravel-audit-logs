@@ -60,12 +60,15 @@ final class AuditLogRedactor
             metadata: $this->metadata($log->metadata),
             occurredAt: $log->occurredAt,
             remoteIp: $log->captureRequestMetadata ? $log->remoteIp : null,
-            targets: array_map(fn (AuditLogTargetData $target): AuditLogTargetData => new AuditLogTargetData(
-                id: $target->id,
-                metadata: $this->metadata($target->metadata),
-                name: $target->name,
-                type: $target->type,
-            ), $log->targets),
+            targets: array_map(
+                fn (AuditLogTargetData $target): AuditLogTargetData => new AuditLogTargetData(
+                    id: $target->id,
+                    metadata: $this->metadata($target->metadata),
+                    name: $target->name,
+                    type: $target->type,
+                ),
+                $log->targets,
+            ),
             tenantId: $log->tenantId,
             userAgent: $log->captureRequestMetadata ? $log->userAgent : null,
         );

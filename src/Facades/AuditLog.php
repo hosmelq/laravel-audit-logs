@@ -11,6 +11,7 @@ use HosmelQ\AuditLog\Contracts\AuditLogManager;
 use HosmelQ\AuditLog\Data\AuditLogData;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Facade;
+use Override;
 
 /**
  * @method static void assertNothingRecorded()
@@ -31,6 +32,7 @@ final class AuditLog extends Facade
         });
     }
 
+    #[Override]
     protected static function getFacadeAccessor(): string
     {
         return AuditLogManager::class;

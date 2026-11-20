@@ -35,9 +35,7 @@ it('rolls back all chunks when one insert fails', function (): void {
             source: 'tests',
             id: 'log-1',
         ),
-    ]))
-        ->toThrow(QueryException::class)
-        ->and(AuditLog::query()->count())->toBe(0);
+    ]))->toThrow(QueryException::class)->and(AuditLog::query()->count())->toBe(0);
 });
 
 it('throws when payloads cannot be encoded as json', function (): void {
@@ -49,15 +47,19 @@ it('throws when payloads cannot be encoded as json', function (): void {
             source: 'tests',
             metadata: ['score' => NAN],
         ),
-    ]))
-        ->toThrow(JsonException::class);
+    ]))->toThrow(JsonException::class);
 });
 
 it('rolls back earlier chunks when changes cannot be encoded as json', function (): void {
     Config::set('audit-log.storage.insert_chunk_size', 1);
 
     expect(fn () => resolve(AuditLogWriter::class)->write([
-        new AuditLogData(actor: new AuditLogActorData(), bucket: 'security', event: 'first.event', source: 'tests'),
+        new AuditLogData(
+            actor: new AuditLogActorData(),
+            bucket: 'security',
+            event: 'first.event',
+            source: 'tests',
+        ),
         new AuditLogData(
             actor: new AuditLogActorData(),
             bucket: 'security',
@@ -147,6 +149,9 @@ it('writes audit log payloads to the database', function (): void {
     ]);
 
     $row = DB::table('audit_logs')->first();
+    $targetMetadataType = DB::table('audit_logs')
+        ->selectRaw("JSON_TYPE(JSON_EXTRACT(targets, '$[0].metadata')) as metadata_type")
+        ->value('metadata_type');
 
     expect($row)
         ->actor_id->toBe('user-1')
@@ -161,11 +166,8 @@ it('writes audit log payloads to the database', function (): void {
         ->user_agent->toBe('AuditLog Test')
         ->metadata->json()->toBe(['count' => 3, 'enabled' => true])
         ->actor_metadata->json()->toBe(['role' => 'admin'])
-        ->targets->json()->{0}->id->toBe('account-1');
-
-    expect(DB::table('audit_logs')
-        ->selectRaw("JSON_TYPE(JSON_EXTRACT(targets, '$[0].metadata')) as metadata_type")
-        ->value('metadata_type'))->toBe('OBJECT');
+        ->targets->json()->{0}->id->toBe('account-1')
+        ->and($targetMetadataType)->toBe('OBJECT');
 });
 
 it('preserves float types in event actor and target metadata after database storage', function (): void {
@@ -184,7 +186,11 @@ it('preserves float types in event actor and target metadata after database stor
 
     $stored = AuditLog::query()->firstOrFail();
 
-    foreach ([$stored->metadata, $stored->actor_metadata, $stored->targets[0]['metadata']] as $values) {
+    foreach ([
+        $stored->metadata,
+        $stored->actor_metadata,
+        $stored->targets[0]['metadata'],
+    ] as $values) {
         expect($values['count'])->toBe(1)
             ->and($values['ratio'])->toBe(1.0)
             ->and($values['zero'])->toBe(0.0);
@@ -261,9 +267,13 @@ it('stores change snapshots as objects and preserves them through correlation', 
 
     $stored = AuditLog::query()->firstOrFail();
 
-    expect($stored->attribute_changes['before'])->toBe([])
+    expect($stored->attribute_changes['before'])->toBeArray()->toBeEmpty()
         ->and($stored->attribute_changes['after'])->toBe(['active' => false])
-        ->and(DB::table('audit_logs')->selectRaw("JSON_TYPE(JSON_EXTRACT(attribute_changes, '$.before')) as before_type")->value('before_type'))
+        ->and(
+            DB::table('audit_logs')
+                ->selectRaw("JSON_TYPE(JSON_EXTRACT(attribute_changes, '$.before')) as before_type")
+                ->value('before_type'),
+        )
         ->toBe('OBJECT');
 });
 

@@ -10,9 +10,7 @@ final readonly class AuditLogChangesData
      * @param array<string, null|array<array-key, mixed>|bool|float|int|string> $before
      * @param array<string, null|array<array-key, mixed>|bool|float|int|string> $after
      */
-    public function __construct(public array $before, public array $after)
-    {
-    }
+    public function __construct(public array $before, public array $after) {}
 
     /**
      * @param array<string, null|array<array-key, mixed>|bool|float|int|string> $before

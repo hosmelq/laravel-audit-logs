@@ -1,5 +1,12 @@
 # Upgrade Guide
 
+## Upgrading to 3.0 from 2.x
+
+### Laravel 13
+
+Laravel Audit Logs now requires Laravel 13. Upgrade your application to Laravel 13 before updating
+the package.
+
 ## Upgrading to 2.0 from 1.x
 
 ### PHP 8.4

@@ -5,7 +5,13 @@ declare(strict_types=1);
 use HosmelQ\AuditLog\Data\AuditLogChangesData;
 
 it('omits unchanged attributes', function (): void {
-    $attributes = ['empty' => '', 'enabled' => false, 'count' => 0, 'optional' => null, 'tags' => ['one', 'two']];
+    $attributes = [
+        'empty' => '',
+        'enabled' => false,
+        'count' => 0,
+        'optional' => null,
+        'tags' => ['one', 'two'],
+    ];
 
     expect(AuditLogChangesData::between($attributes, $attributes)->toArray())
         ->toBe(['before' => [], 'after' => []]);
@@ -13,11 +19,18 @@ it('omits unchanged attributes', function (): void {
 
 it('reports whether it contains changes', function (): void {
     expect(new AuditLogChangesData(before: [], after: [])->isEmpty())->toBeTrue()
-        ->and(new AuditLogChangesData(before: [], after: ['active' => false])->isEmpty())->toBeFalse()
-        ->and(new AuditLogChangesData(before: ['active' => null], after: [])->isEmpty())->toBeFalse();
+        ->and(
+            new AuditLogChangesData(before: [], after: ['active' => false])->isEmpty(),
+        )->toBeFalse()
+        ->and(
+            new AuditLogChangesData(before: ['active' => null], after: [])->isEmpty(),
+        )->toBeFalse();
 });
 
-it('preserves added removed and strictly changed values', function (array $before, array $after): void {
+it('preserves added removed and strictly changed values', function (
+    array $before,
+    array $after,
+): void {
     $changes = AuditLogChangesData::between($before, $after);
 
     expect($changes->toArray())->toBe(['before' => $before, 'after' => $after]);
@@ -45,5 +58,8 @@ it('selects changed attributes from complete snapshots', function (): void {
 it('preserves prepared change data without comparing masked values again', function (): void {
     $changes = new AuditLogChangesData(before: ['email' => 'hidden'], after: ['email' => 'hidden']);
 
-    expect($changes->toArray())->toBe(['before' => ['email' => 'hidden'], 'after' => ['email' => 'hidden']]);
+    expect($changes->toArray())->toBe([
+        'before' => ['email' => 'hidden'],
+        'after' => ['email' => 'hidden'],
+    ]);
 });

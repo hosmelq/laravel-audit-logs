@@ -61,7 +61,9 @@ final class Config
         $days = ConfigFacade::get('audit-log.retention.days');
 
         if ($days !== null && $days < 0) {
-            throw new InvalidArgumentException(sprintf('Invalid audit-log.retention.days value [%d].', $days));
+            throw new InvalidArgumentException(
+                sprintf('Invalid audit-log.retention.days value [%d].', $days),
+            );
         }
 
         return $days;
@@ -69,8 +71,13 @@ final class Config
 
     public static function storageConnection(): null|string
     {
-        /** @var null|string $connection */
         $connection = ConfigFacade::get('audit-log.storage.connection');
+
+        if ($connection !== null && ! is_string($connection)) {
+            throw new InvalidArgumentException(
+                'Invalid audit-log.storage.connection value. Expected a connection name or null.',
+            );
+        }
 
         return $connection;
     }
@@ -83,7 +90,9 @@ final class Config
         $chunkSize = ConfigFacade::integer('audit-log.storage.insert_chunk_size', 500);
 
         if ($chunkSize < 1) {
-            throw new InvalidArgumentException('Invalid audit-log.storage.insert_chunk_size value.');
+            throw new InvalidArgumentException(
+                'Invalid audit-log.storage.insert_chunk_size value.',
+            );
         }
 
         return $chunkSize;
@@ -103,7 +112,9 @@ final class Config
 
         foreach ($keys as $key) {
             if (! is_string($key)) {
-                throw new InvalidArgumentException(sprintf('Invalid audit-log.redaction.%s value. Expected string keys.', $option));
+                throw new InvalidArgumentException(
+                    sprintf('Invalid audit-log.redaction.%s value. Expected string keys.', $option),
+                );
             }
         }
 

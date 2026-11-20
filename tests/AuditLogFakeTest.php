@@ -46,8 +46,7 @@ it('does not assign a fake correlation id when recording one log from an iterabl
         );
     })());
 
-    expect(AuditLog::recorded()->pluck('correlationId')->all())
-        ->toBe([null]);
+    expect(AuditLog::recorded()->pluck('correlationId')->all())->toBe([null]);
 });
 
 it('asserts nothing was recorded', function (): void {
@@ -74,8 +73,10 @@ it('records redacted metadata without changing prepared data', function (): void
 
     AuditLog::record($log);
 
-    AuditLog::assertRecorded(fn (AuditLogData $recorded): bool => $recorded->metadata === ['email' => '[REDACTED]']
-        && $recorded->remoteIp === null && $recorded->userAgent === null);
+    AuditLog::assertRecorded(
+        fn (AuditLogData $recorded): bool => $recorded->metadata === ['email' => '[REDACTED]']
+            && $recorded->remoteIp === null && $recorded->userAgent === null,
+    );
 
     expect($log->metadata)->toBe(['email' => 'user@example.com']);
 });
@@ -91,12 +92,18 @@ it('records redacted changes through correlated scopes', function (): void {
             bucket: 'security',
             event: 'account.updated',
             source: 'tests',
-            changes: AuditLogChangesData::between(before: ['token' => 'old', 'active' => false], after: ['token' => 'new', 'active' => true]),
+            changes: AuditLogChangesData::between(
+                before: ['token' => 'old', 'active' => false],
+                after: ['token' => 'new', 'active' => true],
+            ),
         ));
     }, 'correlation-1');
 
     AuditLog::assertRecorded(fn (AuditLogData $log): bool => $log->correlationId === 'correlation-1'
-        && $log->changes?->toArray() === ['before' => ['active' => false], 'after' => ['active' => true]]);
+        && $log->changes?->toArray() === [
+            'before' => ['active' => false],
+            'after' => ['active' => true],
+        ]);
 });
 
 it('records audit logs and supports assertions', function (): void {
@@ -207,7 +214,9 @@ it('records snapshots with ids and correlation ids when recording many logs', fu
         ->and($second->correlationId)->toBeNull()
         ->and($recorded[0]->id)->toBe($first->id)
         ->and($recorded[1]->id)->toBe($second->id)
-        ->and($recorded[0]->correlationId)->toBe('cor_01HX0000000000000000000000')->toBe($recorded[1]->correlationId);
+        ->and($recorded[0]->correlationId)->toBe('cor_01HX0000000000000000000000')->toBe(
+            $recorded[1]->correlationId,
+        );
 });
 
 it('preserves explicit fake correlation ids while filling missing correlations', function (): void {

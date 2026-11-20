@@ -12,9 +12,7 @@ it('does not capture request metadata in console by default', function (): void 
         'REMOTE_ADDR' => '203.0.113.10',
     ]));
 
-    expect(resolve(RequestMetadata::class))
-        ->remoteIp()->toBeNull()
-        ->userAgent()->toBeNull();
+    expect(resolve(RequestMetadata::class))->remoteIp()->toBeNull()->userAgent()->toBeNull();
 });
 
 it('does not capture request metadata when disabled', function (): void {
@@ -27,9 +25,7 @@ it('does not capture request metadata when disabled', function (): void {
         'REMOTE_ADDR' => '203.0.113.10',
     ]));
 
-    expect(resolve(RequestMetadata::class))
-        ->remoteIp()->toBeNull()
-        ->userAgent()->toBeNull();
+    expect(resolve(RequestMetadata::class))->remoteIp()->toBeNull()->userAgent()->toBeNull();
 });
 
 it('captures missing request metadata', function (): void {

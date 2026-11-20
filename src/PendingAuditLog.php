@@ -53,9 +53,7 @@ final class PendingAuditLog
 
     private null|string $userAgent = null;
 
-    public function __construct(private readonly BackedEnum|string $event)
-    {
-    }
+    public function __construct(private readonly BackedEnum|string $event) {}
 
     public static function make(BackedEnum|string $event): self
     {
@@ -105,7 +103,6 @@ final class PendingAuditLog
     public function changes(array $before, array $after): self
     {
         $changes = AuditLogChangesData::between($before, $after);
-
         $this->changes = $changes->isEmpty() ? null : $changes;
 
         return $this;
@@ -221,10 +218,14 @@ final class PendingAuditLog
             id: $this->id,
             metadata: $this->metadata,
             occurredAt: $this->occurredAt,
-            remoteIp: $this->captureRequestMetadata ? $this->remoteIp ?? $requestMetadata->remoteIp() : null,
+            remoteIp: $this->captureRequestMetadata
+                ? $this->remoteIp ?? $requestMetadata->remoteIp()
+                : null,
             targets: $this->targets,
             tenantId: $this->tenantId ?? $context->tenant(),
-            userAgent: $this->captureRequestMetadata ? $this->userAgent ?? $requestMetadata->userAgent() : null,
+            userAgent: $this->captureRequestMetadata
+                ? $this->userAgent ?? $requestMetadata->userAgent()
+                : null,
         );
     }
 

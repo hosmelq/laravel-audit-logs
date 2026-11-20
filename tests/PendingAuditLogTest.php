@@ -28,8 +28,12 @@ it('throws an audit log identity exception when a scalar target is missing its i
 });
 
 it('does not invoke context resolvers for explicit attributes', function (): void {
-    AuditLogContext::resolveActorUsing(fn (): never => throw new RuntimeException('Actor resolver called'));
-    AuditLogContext::resolveTenantUsing(fn (): never => throw new RuntimeException('Tenant resolver called'));
+    AuditLogContext::resolveActorUsing(
+        fn (): never => throw new RuntimeException('Actor resolver called'),
+    );
+    AuditLogContext::resolveTenantUsing(
+        fn (): never => throw new RuntimeException('Tenant resolver called'),
+    );
 
     expect(audit_log('account.updated')->actor('user', 0)->tenant(0)->toAuditLogData())
         ->actor->id->toBe('0')->tenantId->toBe('0');
@@ -61,12 +65,15 @@ it('uses context for missing actors and tenants and preserves explicit values', 
     AuditLogContext::resolveTenantUsing(fn (): int => 123);
 
     $implicit = audit_log('account.updated')->toAuditLogData();
-    $explicit = audit_log('account.updated')->actor('service', 'worker')->tenant('')->toAuditLogData();
+    $explicit = audit_log('account.updated')
+        ->actor('service', 'worker')
+        ->tenant('')
+        ->toAuditLogData();
 
     expect($implicit->actor->id)->toBe('user-1')
         ->and($implicit->tenantId)->toBe('123')
         ->and($explicit->actor->id)->toBe('worker')
-        ->and($explicit->tenantId)->toBe('');
+        ->and($explicit->tenantId)->toHaveLength(0);
 });
 
 it('builds audit logs with request metadata', function (): void {
@@ -79,14 +86,11 @@ it('builds audit logs with request metadata', function (): void {
 
     $log = audit_log('account.closed')->toAuditLogData();
 
-    expect($log)
-        ->remoteIp->toBe('203.0.113.10')
-        ->userAgent->toBe('Browser');
+    expect($log)->remoteIp->toBe('203.0.113.10')->userAgent->toBe('Browser');
 });
 
 it('builds audit logs with fluent attributes', function (): void {
     $occurredAt = CarbonImmutable::parse('2026-05-25 10:00:00.123 UTC');
-
     $log = audit_log(TestEvent::AccountUpdated)
         ->actor('user', 'user-1')
         ->bucket('security')
@@ -120,10 +124,15 @@ it('builds audit logs with fluent attributes', function (): void {
 
 it('builds change data from attribute snapshots', function (): void {
     $log = audit_log('account.updated')
-        ->changes(before: ['active' => false, 'count' => 1], after: ['active' => true, 'count' => 1])
-        ->toAuditLogData();
+        ->changes(
+            before: ['active' => false, 'count' => 1],
+            after: ['active' => true, 'count' => 1],
+        )->toAuditLogData();
 
-    expect($log->changes?->toArray())->toBe(['before' => ['active' => false], 'after' => ['active' => true]]);
+    expect($log->changes?->toArray())->toBe([
+        'before' => ['active' => false],
+        'after' => ['active' => true],
+    ]);
 });
 
 it('omits change data when no attribute changed', function (): void {

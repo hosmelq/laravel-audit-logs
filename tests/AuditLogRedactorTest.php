@@ -34,9 +34,22 @@ it('excludes and masks keys across event actor and target metadata', function ()
     Config::set('audit-log.redaction.mask', ['email', 'token']);
     Config::set('audit-log.redaction.replacement', 'hidden');
 
-    $metadata = ['password' => 'secret', 'token' => 'secret', 'email' => 'user@example.com', 'enabled' => false, 'count' => 0, 'optional' => null, 'empty' => ''];
+    $metadata = [
+        'password' => 'secret',
+        'token' => 'secret',
+        'email' => 'user@example.com',
+        'enabled' => false,
+        'count' => 0,
+        'optional' => null,
+        'empty' => '',
+    ];
     $log = new AuditLogData(
-        actor: new AuditLogActorData(id: 'user-1', metadata: $metadata, name: 'Jane Doe', type: 'user'),
+        actor: new AuditLogActorData(
+            id: 'user-1',
+            metadata: $metadata,
+            name: 'Jane Doe',
+            type: 'user',
+        ),
         bucket: 'security',
         event: 'account.updated',
         source: 'tests',
@@ -45,9 +58,14 @@ it('excludes and masks keys across event actor and target metadata', function ()
         targets: [new AuditLogTargetData(id: 'account-1', metadata: $metadata, type: 'account')],
         tenantId: 'tenant-1',
     );
-
     $redacted = resolve(AuditLogRedactor::class)->redact($log);
-    $expected = ['email' => 'hidden', 'enabled' => false, 'count' => 0, 'optional' => null, 'empty' => ''];
+    $expected = [
+        'email' => 'hidden',
+        'enabled' => false,
+        'count' => 0,
+        'optional' => null,
+        'empty' => '',
+    ];
 
     expect($redacted->metadata)->toBe($expected)
         ->and($redacted->actor->metadata)->toBe($expected)
@@ -92,7 +110,10 @@ it('omits change data when redaction removes every changed attribute', function 
         bucket: 'security',
         event: 'account.updated',
         source: 'tests',
-        changes: AuditLogChangesData::between(before: ['password' => 'old'], after: ['password' => 'new']),
+        changes: AuditLogChangesData::between(
+            before: ['password' => 'old'],
+            after: ['password' => 'new'],
+        ),
     );
 
     expect(resolve(AuditLogRedactor::class)->redact($log)->changes)->toBeNull();

@@ -10,7 +10,9 @@ use HosmelQ\AuditLog\Tests\TestSupport\TestUser;
 it('propagates actor resolver failures', function (): void {
     $context = resolve(AuditLogContext::class);
 
-    AuditLogContext::resolveActorUsing(fn (): never => throw new RuntimeException('Actor context failed'));
+    AuditLogContext::resolveActorUsing(
+        fn (): never => throw new RuntimeException('Actor context failed'),
+    );
 
     expect(fn () => $context->actor())->toThrow(RuntimeException::class, 'Actor context failed');
 });
@@ -18,7 +20,9 @@ it('propagates actor resolver failures', function (): void {
 it('propagates tenant resolver failures', function (): void {
     $context = resolve(AuditLogContext::class);
 
-    AuditLogContext::resolveTenantUsing(fn (): never => throw new RuntimeException('Tenant context failed'));
+    AuditLogContext::resolveTenantUsing(
+        fn (): never => throw new RuntimeException('Tenant context failed'),
+    );
 
     expect(fn () => $context->tenant())->toThrow(RuntimeException::class, 'Tenant context failed');
 });
@@ -30,14 +34,21 @@ it('uses system context when resolvers return no identity', function (): void {
     AuditLogContext::resolveTenantUsing(fn (): null => null);
 
     expect($context->actor()->toArray())->toBe([
-        'id' => 'system', 'metadata' => [], 'name' => 'System', 'type' => 'system',
-    ])->and($context->tenant())->toBe('');
+        'id' => 'system',
+        'metadata' => [],
+        'name' => 'System',
+        'type' => 'system',
+    ])->and($context->tenant())->toHaveLength(0);
 });
 
-it('resolves each supported actor identity', function (AuditLogActorData|AuditLogIdentity|TestUser $actor): void {
+it('resolves each supported actor identity', function (
+    AuditLogActorData|AuditLogIdentity|TestUser $actor,
+): void {
     $context = resolve(AuditLogContext::class);
 
-    AuditLogContext::resolveActorUsing(fn (): AuditLogActorData|AuditLogIdentity|TestUser => $actor);
+    AuditLogContext::resolveActorUsing(
+        fn (): AuditLogActorData|AuditLogIdentity|TestUser => $actor,
+    );
 
     expect($context->actor()->id)->toBe('user-1');
 })->with([
@@ -57,8 +68,7 @@ it('uses a fresh context instance for each application scope', function (): void
 
     $next = resolve(AuditLogContext::class);
 
-    expect($next)->not->toBe($context)
-        ->and($next->tenant())->toBe('10');
+    expect($next)->not->toBe($context)->and($next->tenant())->toBe('10');
 });
 
 it('evaluates resolvers each time without caching their results', function (): void {

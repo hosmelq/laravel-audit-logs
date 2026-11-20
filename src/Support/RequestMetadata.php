@@ -10,9 +10,7 @@ use Illuminate\Http\Request;
 
 final readonly class RequestMetadata
 {
-    public function __construct(private Application $app)
-    {
-    }
+    public function __construct(private Application $app) {}
 
     public function fill(AuditLogData $log): AuditLogData
     {

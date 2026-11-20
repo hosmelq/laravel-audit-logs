@@ -23,8 +23,7 @@ it('throws database errors when record fails', function (): void {
         bucket: 'security',
         event: 'account.updated',
         source: 'tests',
-    )))
-        ->toThrow(QueryException::class);
+    )))->toThrow(QueryException::class);
 });
 
 it('rolls back record when one insert fails in many logs', function (): void {
@@ -43,9 +42,7 @@ it('rolls back record when one insert fails in many logs', function (): void {
             source: 'tests',
             id: 'log-1',
         ),
-    ]))
-        ->toThrow(QueryException::class)
-        ->and(AuditLog::query()->count())->toBe(0);
+    ]))->toThrow(QueryException::class)->and(AuditLog::query()->count())->toBe(0);
 });
 
 it('rejects invalid custom audit log models', function (): void {
@@ -96,9 +93,7 @@ it('records logs immediately without adding a correlation id', function (): void
 
     $row = AuditLog::query()->firstOrFail();
 
-    expect($row)
-        ->id->toBe($log->id)
-        ->correlation_id->toBeNull();
+    expect($row)->id->toBe($log->id)->correlation_id->toBeNull();
 });
 
 it('records missing request metadata from the current request', function (): void {
@@ -118,9 +113,7 @@ it('records missing request metadata from the current request', function (): voi
 
     $log = AuditLog::query()->firstOrFail();
 
-    expect($log)
-        ->remote_ip->toBe('203.0.113.10')
-        ->user_agent->toBe('Browser');
+    expect($log)->remote_ip->toBe('203.0.113.10')->user_agent->toBe('Browser');
 });
 
 it('does not assign a correlation id when recording one log in an array', function (): void {
@@ -202,7 +195,9 @@ it('preserves explicit ids and correlation ids', function (): void {
 
     expect(AuditLog::query()->orderBy('id')->pluck('id')->all())
         ->toBe(['log-1', 'log-2'])
-        ->and(AuditLog::query()->distinct()->pluck('correlation_id')->all())->toBe(['correlation-1']);
+        ->and(AuditLog::query()->distinct()->pluck('correlation_id')->all())->toBe([
+            'correlation-1',
+        ]);
 });
 
 it('preserves explicit correlation ids while filling missing correlations', function (): void {
