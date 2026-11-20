@@ -96,3 +96,45 @@ it('throws for invalid request capture environment values', function (
     'null' => ['(null)'],
     'unknown' => ['maybe'],
 ]);
+
+it('reads retention days from environment values', function (string $value, null|int $days): void {
+    $_SERVER['AUDIT_LOG_RETENTION_DAYS'] = $value;
+
+    try {
+        Config::set('audit-log', require __DIR__.'/../../config/audit-log.php');
+    } finally {
+        unset($_SERVER['AUDIT_LOG_RETENTION_DAYS']);
+    }
+
+    expect(AuditLogConfig::retentionDays())->toBe($days);
+})->with([
+    'empty' => ['', null],
+    'zero' => ['0', 0],
+    'days' => ['30', 30],
+    'zeros only' => ['00', 0],
+    'leading zero' => ['030', 30],
+    'plus sign' => ['+30', 30],
+    'leading non-breaking space' => ["\u{00A0}030", 30],
+]);
+
+it('throws for invalid retention environment values', function (string $value): void {
+    $_SERVER['AUDIT_LOG_RETENTION_DAYS'] = $value;
+
+    try {
+        Config::set('audit-log', require __DIR__.'/../../config/audit-log.php');
+    } finally {
+        unset($_SERVER['AUDIT_LOG_RETENTION_DAYS']);
+    }
+
+    expect(fn (): null|int => AuditLogConfig::retentionDays())
+        ->toThrow(
+            InvalidArgumentException::class,
+            sprintf('Invalid audit-log.retention.days value [%s].', $value),
+        );
+})->with([
+    'words' => ['thirty'],
+    'sign alone' => ['+'],
+    'negative' => ['-30'],
+    'fraction' => ['1.5'],
+    'overflow' => ['9223372036854775808'],
+]);

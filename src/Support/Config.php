@@ -57,13 +57,36 @@ final class Config
 
     public static function retentionDays(): null|int
     {
-        /** @var null|int $days */
         $days = ConfigFacade::get('audit-log.retention.days');
 
-        if ($days !== null && $days < 0) {
-            throw new InvalidArgumentException(
-                sprintf('Invalid audit-log.retention.days value [%d].', $days),
-            );
+        if (is_string($days)) {
+            $trimmed = mb_trim($days);
+
+            if ($trimmed === '') {
+                return null;
+            }
+
+            $unsigned = str_starts_with($trimmed, '+') ? mb_substr($trimmed, 1) : $trimmed;
+
+            if ($unsigned !== '' && strspn($unsigned, '0123456789') === mb_strlen($unsigned)) {
+                $digits = mb_ltrim($unsigned, '0');
+                $days = filter_var(
+                    $digits === '' ? '0' : $digits,
+                    FILTER_VALIDATE_INT,
+                    FILTER_NULL_ON_FAILURE,
+                ) ?? $days;
+            }
+        }
+
+        if ($days === null) {
+            return null;
+        }
+
+        if (! is_int($days) || $days < 0) {
+            throw new InvalidArgumentException(sprintf(
+                'Invalid audit-log.retention.days value [%s].',
+                is_int($days) || is_string($days) ? $days : get_debug_type($days),
+            ));
         }
 
         return $days;

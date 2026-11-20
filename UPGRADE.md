@@ -7,6 +7,25 @@
 Laravel Audit Logs now requires Laravel 13. Upgrade your application to Laravel 13 before updating
 the package.
 
+### Published configuration
+
+The installer publishes `config/audit-log.php`, and the published file takes precedence over the
+package's defaults. If you published it, pass the retention value through unchanged, so an empty
+value keeps logs indefinitely and a value that is not a whole number of days throws instead of
+making new logs expire as soon as they occur:
+
+```php
+'retention' => [
+    'days' => env('AUDIT_LOG_RETENTION_DAYS'),
+],
+```
+
+If your application caches its configuration, rebuild the cache afterwards:
+
+```bash
+php artisan config:cache
+```
+
 ## Upgrading to 2.0 from 1.x
 
 ### PHP 8.4

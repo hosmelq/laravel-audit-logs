@@ -45,7 +45,7 @@ Both lists must contain only strings; any other value throws an `InvalidArgument
 | --- | --- | --- |
 | `retention.days` | `null` | Number of days to keep new logs, or `null` to keep them indefinitely. |
 
-When a log is written, its `expires_at` value is set to `occurred_at` plus the configured number of days. A `null` value leaves `expires_at` empty, and `0` makes logs expire as soon as they occur. Changing the option does not update rows that already exist. A negative value throws an `InvalidArgumentException` when a log is written.
+When a log is written, its `expires_at` value is set to `occurred_at` plus the configured number of days. A `null` value leaves `expires_at` empty, and `0` makes logs expire as soon as they occur. Changing the option does not update rows that already exist. An empty value also keeps logs indefinitely. Any value that is not a whole number of days, such as a negative number or `thirty`, throws an `InvalidArgumentException` when a log is written.
 
 The package model uses Laravel's `MassPrunable` trait. Schedule the `model:prune` command to delete expired rows:
 

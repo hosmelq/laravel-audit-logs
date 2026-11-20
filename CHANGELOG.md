@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Require Laravel 13.
 - Accept `0`, `1`, `on`, `off`, `yes` and `no` in the `AUDIT_LOG_REQUEST_CAPTURE_*` environment variables, which used to make recording logs throw, and throw for empty or unknown values.
+- Keep logs indefinitely when `AUDIT_LOG_RETENTION_DAYS` is empty, and throw when it is not a whole number of days, instead of making new logs expire as soon as they occur.
 
 See [UPGRADE.md](UPGRADE.md) for upgrade instructions.
 

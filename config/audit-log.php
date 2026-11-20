@@ -66,9 +66,7 @@ return [
     */
 
     'retention' => [
-        'days' => env('AUDIT_LOG_RETENTION_DAYS') === null
-            ? null
-            : (int) env('AUDIT_LOG_RETENTION_DAYS'),
+        'days' => env('AUDIT_LOG_RETENTION_DAYS'),
     ],
 
     /*
