@@ -37,3 +37,62 @@ it('throws for invalid storage insert chunk sizes', function (): void {
             'Invalid audit-log.storage.insert_chunk_size value.',
         );
 });
+
+it('reads request capture options from boolean environment values', function (
+    string $enabled,
+    string $disabled,
+): void {
+    $_SERVER['AUDIT_LOG_REQUEST_CAPTURE_IN_CONSOLE'] = $enabled;
+    $_SERVER['AUDIT_LOG_REQUEST_CAPTURE_REMOTE_IP'] = $disabled;
+    $_SERVER['AUDIT_LOG_REQUEST_CAPTURE_USER_AGENT'] = $disabled;
+
+    try {
+        Config::set('audit-log', require __DIR__.'/../../config/audit-log.php');
+    } finally {
+        unset(
+            $_SERVER['AUDIT_LOG_REQUEST_CAPTURE_IN_CONSOLE'],
+            $_SERVER['AUDIT_LOG_REQUEST_CAPTURE_REMOTE_IP'],
+            $_SERVER['AUDIT_LOG_REQUEST_CAPTURE_USER_AGENT'],
+        );
+    }
+
+    expect(AuditLogConfig::requestCaptureInConsole())->toBeTrue()
+        ->and(AuditLogConfig::requestCaptureRemoteIp())->toBeFalse()
+        ->and(AuditLogConfig::requestCaptureUserAgent())->toBeFalse();
+})->with([
+    'booleans' => ['true', 'false'],
+    'numbers' => ['1', '0'],
+    'on and off' => ['on', 'off'],
+    'yes and no' => ['yes', 'no'],
+]);
+
+it('throws for invalid request capture environment values', function (
+    string $variable,
+    string $option,
+    string $value,
+): void {
+    $_SERVER[$variable] = $value;
+
+    try {
+        Config::set('audit-log', require __DIR__.'/../../config/audit-log.php');
+    } finally {
+        unset($_SERVER[$variable]);
+    }
+
+    expect(fn (): bool => match ($option) {
+        'capture_in_console' => AuditLogConfig::requestCaptureInConsole(),
+        'capture_remote_ip' => AuditLogConfig::requestCaptureRemoteIp(),
+        default => AuditLogConfig::requestCaptureUserAgent(),
+    })->toThrow(
+        InvalidArgumentException::class,
+        sprintf('Invalid audit-log.request.%s value. Expected a boolean.', $option),
+    );
+})->with([
+    'console' => ['AUDIT_LOG_REQUEST_CAPTURE_IN_CONSOLE', 'capture_in_console'],
+    'remote ip' => ['AUDIT_LOG_REQUEST_CAPTURE_REMOTE_IP', 'capture_remote_ip'],
+    'user agent' => ['AUDIT_LOG_REQUEST_CAPTURE_USER_AGENT', 'capture_user_agent'],
+])->with([
+    'empty' => [''],
+    'null' => ['(null)'],
+    'unknown' => ['maybe'],
+]);

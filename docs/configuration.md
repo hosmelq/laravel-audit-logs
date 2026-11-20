@@ -23,6 +23,8 @@ The builder applies these defaults when it prepares a log. Values passed to `buc
 | `request.capture_user_agent` | `true` | Fill a missing user agent from the current request. |
 | `request.capture_in_console` | `false` | Allow capture while the application runs in the console. |
 
+Each option accepts a boolean or one of the values `true`, `false`, `1`, `0`, `on`, `off`, `yes`, and `no`. Any other value, including an empty one, throws an `InvalidArgumentException` when the option is read.
+
 Console capture is disabled because Laravel binds a synthetic request when running Artisan commands. Queue workers also run in the console, so logs recorded from queued jobs have no request metadata unless you set it yourself. Enable `capture_in_console` only when the console request holds the values you want to store.
 
 See [request metadata](basic-usage/recording-audit-logs#request-metadata) for how captured and explicit values are combined.

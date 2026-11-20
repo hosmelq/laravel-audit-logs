@@ -42,17 +42,17 @@ final class Config
 
     public static function requestCaptureInConsole(): bool
     {
-        return ConfigFacade::boolean('audit-log.request.capture_in_console', false);
+        return self::requestCaptureOption('capture_in_console', false);
     }
 
     public static function requestCaptureRemoteIp(): bool
     {
-        return ConfigFacade::boolean('audit-log.request.capture_remote_ip', true);
+        return self::requestCaptureOption('capture_remote_ip', true);
     }
 
     public static function requestCaptureUserAgent(): bool
     {
-        return ConfigFacade::boolean('audit-log.request.capture_user_agent', true);
+        return self::requestCaptureOption('capture_user_agent', true);
     }
 
     public static function retentionDays(): null|int
@@ -119,5 +119,25 @@ final class Config
         }
 
         return array_values($keys);
+    }
+
+    private static function requestCaptureOption(string $option, bool $default): bool
+    {
+        $key = 'audit-log.request.'.$option;
+        $value = ConfigFacade::get($key, $default);
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_string($value) && mb_trim($value) !== '') {
+            $enabled = filter_var(mb_trim($value), FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+
+            if ($enabled !== null) {
+                return $enabled;
+            }
+        }
+
+        throw new InvalidArgumentException(sprintf('Invalid %s value. Expected a boolean.', $key));
     }
 }
